@@ -1,0 +1,16 @@
+.slme-admin .slme-controls { display: grid; gap: 12px; margin: 16px 0; }
+.slme-admin .slme-row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.slme-admin #slme-bg-preview img { max-width: 140px; height: auto; display: inline-block; vertical-align: middle; }
+.slme-editor-wrap { border: 1px solid #dcdcdc; background: #f9f9f9; padding: 8px; }
+.slme-editor-canvas { position: relative; min-height: 540px; background-size: cover; background-repeat: no-repeat; background-position: center; overflow: hidden; }
+.slme-editor-hint { padding: 20px; color: #666; }
+
+.slme-tile { position: absolute; border: 1px solid #ddd; background: #fff; overflow: hidden; cursor: move; box-shadow: 0 2px 6px rgba(0,0,0,.08); }
+.slme-tile .slme-img { position: absolute; inset: 0; background-size: cover; background-position: center; }
+.slme-tile .slme-status { position: absolute; top: 4px; right: 6px; font-size: 16px; background: rgba(255,255,255,.9); padding: 2px 6px; border-radius: 6px; }
+.slme-tile .slme-label { position: absolute; bottom: 4px; left: 6px; font-weight: 600; background: rgba(255,255,255,.9); padding: 2px 6px; border-radius: 6px; }
+
+.slme-colwrap { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.slme-col { border: 1px dashed #ccc; min-height: 400px; background: #fff; padding: 8px; }
+.slme-col-title { font-weight: 600; margin-bottom: 6px; }
+.slme-col-inner { position: relative; min-height: 360px; }
