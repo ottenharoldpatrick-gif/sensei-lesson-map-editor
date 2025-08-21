@@ -2,161 +2,176 @@
 if ( ! defined( 'ABSPATH' ) ) { exit; }
 
 class SLME_Admin {
-
 	public static function init() {
-		add_action( 'admin_menu', [ __CLASS__, 'menu' ] );
-		add_action( 'admin_enqueue_scripts', [ __CLASS__, 'assets' ] );
-		add_action( 'wp_ajax_slme_save', [ __CLASS__, 'ajax_save' ] );
+		// Metabox op cursus bewerken
+		add_action( 'add_meta_boxes', [ __CLASS__, 'add_metabox' ] );
+		// AJAX save
+		add_action( 'wp_ajax_slme_save_map', [ __CLASS__, 'handle_save_map' ] );
 	}
-
-	public static function menu() {
-		add_menu_page(
-			'Lesson Map Editor',
-			'Lesson Map',
-			'manage_options',
-			'slme',
-			[ __CLASS__, 'screen' ],
-			'dashicons-screenoptions',
-			58
+	public static function add_metabox() {
+		add_meta_box(
+			'slme_metabox',
+			__( 'Lesson Map Editor', 'slme' ),
+			[ __CLASS__, 'render_metabox' ],
+			'course',
+			'normal',
+			'high'
 		);
 	}
-
-	public static function assets( $hook ) {
-		if ( $hook !== 'toplevel_page_slme' ) return;
-
-		wp_enqueue_media();
-
-		wp_enqueue_style( 'slme-admin', SLME_URL . 'assets/css/slme-admin.css', [], SLME_VERSION );
-		wp_enqueue_script( 'slme-admin', SLME_URL . 'assets/js/slme-admin.js', [ 'jquery' ], SLME_VERSION, true );
-
-		wp_localize_script( 'slme-admin', 'SLME',
-			[
-				'nonce' => wp_create_nonce( 'slme_nonce' ),
-				'ajax'  => admin_url( 'admin-ajax.php' ),
-			]
-		);
-	}
-
-	private static function get_course_select_html() : string {
-		$courses = get_posts( [
-			'post_type'      => 'course',
+	private static function get_course_lessons( $course_id ) {
+		// Probeer Sensei API
+		if ( function_exists( 'Sensei' ) && isset( Sensei()->course ) && method_exists( Sensei()->course, 'course_lessons' ) ) {
+			$lessons = Sensei()->course->course_lessons( $course_id );
+			if ( is_array( $lessons ) ) { return $lessons; }
+		}
+		// Fallback: WP_Query op "lesson" met course relatie
+		$q = new WP_Query([
+			'post_type'      => 'lesson',
 			'posts_per_page' => -1,
-			'orderby'        => 'title',
+			'meta_query'     => [
+				[
+					'key'   => '_lesson_course',
+					'value' => $course_id,
+				],
+			],
+			'orderby'        => 'menu_order',
 			'order'          => 'ASC',
-			'fields'         => [ 'ids' ],
-		] );
-
-		$html = '<select id="slme-course" name="slme_course">';
-		$html .= '<option value="">Kies een cursus…</option>';
-		foreach ( $courses as $cid ) {
-			$html .= sprintf( '<option value="%d">%s</option>', $cid, esc_html( get_the_title( $cid ) ) );
-		}
-		$html .= '</select>';
-		return $html;
+		]);
+		return $q->posts;
 	}
+	public static function render_metabox( $post ) {
+		$course_id     = $post->ID;
+		$layout        = get_post_meta( $course_id, '_slme_layout', true ) ?: 'free';
+		$background_id = intval( get_post_meta( $course_id, '_slme_background_id', true ) );
+		$tile_size     = get_post_meta( $course_id, '_slme_tile_size', true ) ?: 'm';
+		$tiles         = get_post_meta( $course_id, '_slme_tiles', true );
+		if ( ! is_array( $tiles ) ) { $tiles = []; }
 
-	public static function screen() {
-		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_die( 'Geen toegang' );
-		}
+		$bg_url = $background_id ? wp_get_attachment_image_url( $background_id, 'full' ) : '';
+		$lessons = self::get_course_lessons( $course_id );
 
+		wp_nonce_field( 'slme_admin', 'slme_admin_nonce' );
 		?>
-		<div class="wrap slme-admin">
-			<h1>Lesson Map Editor</h1>
+		<div class="slme-controls">
+			<label>
+				<?php _e('Layout', 'slme'); ?>:
+				<select id="slme-layout">
+					<option value="free" <?php selected( $layout, 'free' ); ?>>Vrije kaart</option>
+					<option value="columns" <?php selected( $layout, 'columns' ); ?>>Kolommen</option>
+				</select>
+			</label>
 
-			<div class="slme-controls">
-				<label>Cursus: <?php echo self::get_course_select_html(); ?></label>
+			<label>
+				<?php _e('Tegelgrootte', 'slme'); ?>:
+				<select id="slme-tile-size">
+					<option value="s" <?php selected( $tile_size, 's' ); ?>>Klein</option>
+					<option value="m" <?php selected( $tile_size, 'm' ); ?>>Middel</option>
+					<option value="l" <?php selected( $tile_size, 'l' ); ?>>Groot</option>
+					<option value="custom" <?php selected( $tile_size, 'custom' ); ?>>Custom (CSS)</option>
+				</select>
+			</label>
 
-				<div class="slme-row">
-					<label>Weergave:</label>
-					<label><input type="radio" name="slme_mode" value="free" checked> Vrije kaart (standaard)</label>
-					<label><input type="radio" name="slme_mode" value="columns"> Kolommen</label>
-				</div>
+			<button type="button" class="button" id="slme-choose-bg"><?php _e('Achtergrond kiezen', 'slme'); ?></button>
+			<button type="button" class="button" id="slme-clear-bg"><?php _e('Achtergrond verwijderen', 'slme'); ?></button>
 
-				<div class="slme-row">
-					<label>Achtergrond:</label>
-					<input type="hidden" id="slme-bg-id" value="">
-					<button class="button" id="slme-bg-choose">Kies uit mediabibliotheek</button>
-					<button class="button button-link-delete" id="slme-bg-clear">Verwijder</button>
-					<span id="slme-bg-preview"></span>
-				</div>
-
-				<div class="slme-row">
-					<label>Tile-formaat:</label>
-					<select id="slme-tile-size">
-						<option value="s">Klein</option>
-						<option value="m" selected>Middel</option>
-						<option value="l">Groot</option>
-						<option value="custom">Eigen (px)</option>
-					</select>
-					<input type="number" id="slme-tile-w" value="180" min="60" step="10"> ×
-					<input type="number" id="slme-tile-h" value="120" min="40" step="10"> px
-				</div>
-
-				<div class="slme-row">
-					<label><input type="checkbox" id="slme-borders"> Module‑grenzen (borders) tonen</label>
-				</div>
-
-				<div class="slme-row">
-					<button class="button button-primary" id="slme-save">Opslaan</button>
-					<button class="button" id="slme-reset">Reset posities</button>
-				</div>
-			</div>
-
-			<div class="slme-editor-wrap">
-				<div class="slme-editor-canvas" id="slme-canvas" aria-live="polite">
-					<div class="slme-editor-hint">Kies eerst een cursus hierboven.</div>
-				</div>
-			</div>
-
-			<p class="description">Tip: sleep tegels; gebruik <kbd>[</kbd> en <kbd>]</kbd> om z‑index (voor/achter) te wijzigen; dubbelklik tegel om 3‑tekens label te zetten.</p>
+			<button type="button" class="button button-primary" id="slme-save"><?php _e('Opslaan', 'slme'); ?></button>
+			<button type="button" class="button" id="slme-reset"><?php _e('Reset (alle posities leeg)', 'slme'); ?></button>
 		</div>
+
+		<input type="hidden" id="slme-course-id" value="<?php echo esc_attr( $course_id ); ?>">
+		<input type="hidden" id="slme-background-id" value="<?php echo esc_attr( $background_id ); ?>">
+
+		<div id="slme-canvas" class="slme-canvas slme-<?php echo esc_attr( $layout ); ?>" style="<?php echo $bg_url ? 'background-image:url(' . esc_url( $bg_url ) . ');' : ''; ?>">
+			<?php
+			// Render tiles voor editor: absolute posities voor 'free', of in 3 kolommen voor 'columns'
+			// Bepaal bestaande posities:
+			$positions = [];
+			foreach ( $tiles as $t ) {
+				if ( empty( $t['lesson_id'] ) ) continue;
+				$positions[ intval($t['lesson_id']) ] = $t;
+			}
+			// 3 kolommen container (ook bij free gebruiken we 1 canvas; CSS regelt columns vs free)
+			$col_count = 3;
+			echo '<div class="slme-columns" data-cols="' . intval($col_count) . '">';
+			for ( $c = 0; $c < $col_count; $c++ ) {
+				echo '<div class="slme-col" data-col="' . $c . '"></div>';
+			}
+			echo '</div>';
+
+			// Plaats alle lessen als draggable tiles
+			foreach ( $lessons as $lesson ) {
+				$lid = $lesson->ID;
+				$pos = isset( $positions[ $lid ] ) ? $positions[ $lid ] : [];
+				$x   = isset( $pos['x'] ) ? floatval($pos['x']) : 0;
+				$y   = isset( $pos['y'] ) ? floatval($pos['y']) : 0;
+				$z   = isset( $pos['z'] ) ? intval($pos['z']) : 0;
+				$col = isset( $pos['col'] ) ? intval($pos['col']) : 0;
+				$lab = isset( $pos['label'] ) ? substr( sanitize_text_field( $pos['label'] ), 0, 3 ) : '';
+
+				$thumb = get_the_post_thumbnail_url( $lid, 'medium' );
+				if ( ! $thumb ) { $thumb = wc_placeholder_img_src(); } // fallback; als WooCommerce niet aanwezig is, negeren
+				?>
+				<div class="slme-tile" draggable="true"
+					data-lesson-id="<?php echo esc_attr( $lid ); ?>"
+					data-col="<?php echo esc_attr( $col ); ?>"
+					data-z="<?php echo esc_attr( $z ); ?>"
+					style="left:<?php echo esc_attr( $x ); ?>px; top:<?php echo esc_attr( $y ); ?>px; z-index:<?php echo esc_attr( $z ); ?>;">
+					<div class="slme-tile-img" style="background-image:url('<?php echo esc_url( $thumb ); ?>');"></div>
+					<span class="slme-label"><?php echo esc_html( $lab ); ?></span>
+				</div>
+				<?php
+			}
+			?>
+		</div>
+
+		<p class="description">
+			<?php _e('Sleep tegels vrij over de kaart (Vrije kaart) of binnen de kolom (Kolommen). Opslaan bewaart posities per les (user-voortgang blijft user-specifiek).', 'slme'); ?>
+		</p>
 		<?php
 	}
 
-	public static function ajax_save() {
-		check_ajax_referer( 'slme_nonce', 'nonce' );
-		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_send_json_error( [ 'message' => 'Geen rechten' ], 403 );
+	public static function handle_save_map() {
+		try {
+			if ( empty( $_POST['nonce'] ) || ! wp_verify_nonce( $_POST['nonce'], 'slme_admin' ) ) {
+				wp_send_json_error( [ 'message' => 'Ongeldige nonce' ], 403 );
+			}
+			$course_id = isset($_POST['course_id']) ? intval($_POST['course_id']) : 0;
+			if ( ! $course_id || 'course' !== get_post_type( $course_id ) ) {
+				wp_send_json_error( [ 'message' => 'Ongeldige course_id' ], 400 );
+			}
+			if ( ! current_user_can( 'edit_post', $course_id ) ) {
+				wp_send_json_error( [ 'message' => 'Geen rechten' ], 403 );
+			}
+
+			$layout        = isset($_POST['layout']) ? sanitize_text_field( $_POST['layout'] ) : 'free';
+			$background_id = isset($_POST['background_id']) ? intval( $_POST['background_id'] ) : 0;
+			$tile_size     = isset($_POST['tile_size']) ? sanitize_text_field( $_POST['tile_size'] ) : 'm';
+			$tiles_raw     = isset($_POST['tiles']) ? wp_unslash( $_POST['tiles'] ) : '[]';
+			$tiles         = json_decode( $tiles_raw, true );
+			if ( ! is_array( $tiles ) ) { $tiles = []; }
+
+			$clean = [];
+			foreach ( $tiles as $t ) {
+				$clean[] = [
+					'lesson_id' => isset($t['lesson_id']) ? intval($t['lesson_id']) : 0,
+					'x'         => isset($t['x']) ? floatval($t['x']) : 0,
+					'y'         => isset($t['y']) ? floatval($t['y']) : 0,
+					'col'       => array_key_exists('col',$t) ? intval($t['col']) : null,
+					'z'         => isset($t['z']) ? intval($t['z']) : 0,
+					'label'     => isset($t['label']) ? substr( sanitize_text_field( $t['label'] ), 0, 3 ) : '',
+				];
+			}
+
+			update_post_meta( $course_id, '_slme_layout', in_array( $layout, ['free','columns'], true ) ? $layout : 'free' );
+			update_post_meta( $course_id, '_slme_background_id', $background_id );
+			update_post_meta( $course_id, '_slme_tile_size', in_array( $tile_size, ['s','m','l','custom'], true ) ? $tile_size : 'm' );
+			update_post_meta( $course_id, '_slme_tiles', $clean );
+
+			wp_send_json_success( [ 'updated' => true ] );
+
+		} catch ( Throwable $e ) {
+			wp_send_json_error( [ 'message' => $e->getMessage() ], 500 );
 		}
-
-		$course_id = isset( $_POST['course'] ) ? absint( $_POST['course'] ) : 0;
-		if ( ! $course_id ) {
-			wp_send_json_error( [ 'message' => 'Geen course_id' ], 400 );
-		}
-
-		$mode        = isset( $_POST['mode'] ) ? sanitize_text_field( $_POST['mode'] ) : 'free';
-		$bg_id       = isset( $_POST['bg_id'] ) ? absint( $_POST['bg_id'] ) : 0;
-		$tile_size   = isset( $_POST['tile_size'] ) ? sanitize_text_field( $_POST['tile_size'] ) : 'm';
-		$tile_w      = isset( $_POST['tile_w'] ) ? absint( $_POST['tile_w'] ) : 180;
-		$tile_h      = isset( $_POST['tile_h'] ) ? absint( $_POST['tile_h'] ) : 120;
-		$borders     = ! empty( $_POST['borders'] );
-		$positions   = isset( $_POST['positions'] ) && is_array( $_POST['positions'] ) ? $_POST['positions'] : [];
-
-		// Sanitize positions
-		$clean = [];
-		foreach ( $positions as $lesson_id => $p ) {
-			$lesson_id = absint( $lesson_id );
-			if ( ! $lesson_id ) continue;
-			$clean[ $lesson_id ] = [
-				'x'     => isset( $p['x'] ) ? intval( $p['x'] ) : 0,
-				'y'     => isset( $p['y'] ) ? intval( $p['y'] ) : 0,
-				'w'     => isset( $p['w'] ) ? max( 40, intval( $p['w'] ) ) : $tile_w,
-				'h'     => isset( $p['h'] ) ? max( 40, intval( $p['h'] ) ) : $tile_h,
-				'z'     => isset( $p['z'] ) ? max( 1, intval( $p['z'] ) ) : 1,
-				'label' => isset( $p['label'] ) ? substr( sanitize_text_field( $p['label'] ), 0, 3 ) : '',
-				'module'=> isset( $p['module'] ) ? sanitize_text_field( $p['module'] ) : '',
-			];
-		}
-
-		update_post_meta( $course_id, '_slme_mode', $mode );
-		update_post_meta( $course_id, '_slme_bg_id', $bg_id );
-		update_post_meta( $course_id, '_slme_tile_size', $tile_size );
-		update_post_meta( $course_id, '_slme_tile_w', $tile_w );
-		update_post_meta( $course_id, '_slme_tile_h', $tile_h );
-		update_post_meta( $course_id, '_slme_borders', $borders ? 1 : 0 );
-		update_post_meta( $course_id, '_slme_positions', $clean );
-
-		wp_send_json_success( [ 'message' => 'Opgeslagen' ] );
 	}
 }
+SLME_Admin::init();
