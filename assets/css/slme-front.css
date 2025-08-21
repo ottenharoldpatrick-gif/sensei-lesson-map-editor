@@ -1,0 +1,6 @@
+.slme-map { padding: 16px; border: 1px solid #ddd; background: #fafafa; }
+.slme-columns { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.slme-col { background: #fff; border: 1px solid #e5e5e5; padding: 12px; min-height: 80px; }
+@media (max-width: 768px) {
+  .slme-columns { grid-template-columns: 1fr; }
+}
