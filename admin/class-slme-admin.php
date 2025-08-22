@@ -10,8 +10,8 @@ class SLME_Admin {
 
     public function register_menu() {
         add_menu_page(
-            'Lesson Map Editor',
-            'Lesson Map Editor',
+            'Sensei Cursus Maps',
+            'Sensei Cursus Maps',
             'manage_options',
             'slme-editor',
             [ $this, 'render_editor_page' ],
