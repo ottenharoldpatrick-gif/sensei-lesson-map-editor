@@ -1,0 +1,12 @@
+{
+  "generated_at": "2025-08-22T18:36:57.105658Z",
+  "base_zip": "sensei-lesson-map-editor-main.zip",
+  "overlay_zip": "sensei-lesson-map-editor-clean.zip",
+  "summary": {
+    "total_files": 33,
+    "replaced": 0,
+    "kept_identical": 0,
+    "kept_from_main_only": 11,
+    "added_from_clean_only": 22
+  }
+}

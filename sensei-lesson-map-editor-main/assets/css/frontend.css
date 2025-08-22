@@ -1,0 +1,23 @@
+.slme-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.slme-tile {
+    background: #f5f5f5;
+    border: 1px solid #ccc;
+    padding: 10px;
+    text-align: center;
+    border-radius: 8px;
+    position: relative;
+}
+
+.slme-tile.done::after {
+    content: "✓";
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    color: green;
+    font-weight: bold;
+}

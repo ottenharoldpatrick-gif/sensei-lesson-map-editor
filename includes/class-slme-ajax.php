@@ -1,76 +1,44 @@
 <?php
-/**
- * Frontend – shortcode + assets.
- */
-
 namespace SLME;
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit;
-}
+if ( ! defined( 'ABSPATH' ) ) { exit; }
 
-if ( ! class_exists( '\SLME\Frontend' ) ) {
+if ( ! class_exists( __NAMESPACE__ . '\Ajax' ) ) {
 
-	class Frontend {
+	class Ajax {
 
-		public static function init() {
-			add_action( 'wp_enqueue_scripts', [ __CLASS__, 'enqueue_frontend_assets' ] );
-			add_shortcode( 'slme_course_map', [ __CLASS__, 'shortcode_course_map' ] );
+		public static function init() : void {
+			add_action( 'wp_ajax_slme_save_layout', [ __CLASS__, 'save_layout' ] );
+			add_action( 'wp_ajax_slme_reset_layout', [ __CLASS__, 'reset_layout' ] );
 		}
 
-		public static function enqueue_frontend_assets() {
-			$base_dir = plugin_dir_path( dirname( __FILE__ ) );
-			$base_url = plugin_dir_url( dirname( __FILE__ ) );
-
-			$css_path = $base_dir . 'assets/css/frontend.css';
-			$css_url  = $base_url . 'assets/css/frontend.css';
-
-			if ( file_exists( $css_path ) ) {
-				wp_enqueue_style(
-					'slme-frontend',
-					$css_url,
-					[],
-					filemtime( $css_path )
-				);
+		public static function save_layout() : void {
+			check_ajax_referer( 'slme_nonce', 'nonce' );
+			if ( ! current_user_can( 'edit_posts' ) ) {
+				wp_send_json_error( [ 'message' => 'forbidden' ], 403 );
 			}
+			$course_id = isset( $_POST['course_id'] ) ? intval( $_POST['course_id'] ) : 0;
+			$layout    = isset( $_POST['layout'] ) ? wp_unslash( $_POST['layout'] ) : '';
+
+			if ( ! $course_id ) {
+				wp_send_json_error( [ 'message' => 'missing course_id' ], 400 );
+			}
+
+			update_post_meta( $course_id, '_slme_layout_json', $layout );
+			wp_send_json_success( [ 'saved' => true ] );
 		}
 
-		/**
-		 * [slme_course_map course_id=""] – toont kolommen/grid.
-		 */
-		public static function shortcode_course_map( $atts ) {
-			$atts = shortcode_atts( [
-				'course_id' => '',
-				'view'      => 'grid-columns', // behoud stabiele template-naam
-			], $atts, 'slme_course_map' );
-
-			$course_id = absint( $atts['course_id'] );
+		public static function reset_layout() : void {
+			check_ajax_referer( 'slme_nonce', 'nonce' );
+			if ( ! current_user_can( 'edit_posts' ) ) {
+				wp_send_json_error( [ 'message' => 'forbidden' ], 403 );
+			}
+			$course_id = isset( $_POST['course_id'] ) ? intval( $_POST['course_id'] ) : 0;
 			if ( ! $course_id ) {
-				// Probeer huidige post indien cursus.
-				if ( is_singular( 'course' ) ) {
-					$course_id = get_the_ID();
-				}
+				wp_send_json_error( [ 'message' => 'missing course_id' ], 400 );
 			}
-
-			if ( ! $course_id ) {
-				return '<div class="slme-notice slme-notice--warn">' .
-					esc_html__( 'Geen cursus gevonden voor weergave.', 'slme' ) .
-				'</div>';
-			}
-
-			// Laad template: templates/grid-columns.php
-			$template_file = plugin_dir_path( dirname( __FILE__ ) ) . 'templates/grid-columns.php';
-
-			if ( ! file_exists( $template_file ) ) {
-				return '<div class="slme-notice slme-notice--error">' .
-					esc_html__( 'Template grid-columns.php ontbreekt.', 'slme' ) .
-				'</div>';
-			}
-
-			ob_start();
-			$slme_course_id = $course_id; // beschikbaar in template
-			include $template_file;
-			return ob_get_clean();
+			delete_post_meta( $course_id, '_slme_layout_json' );
+			wp_send_json_success( [ 'reset' => true ] );
 		}
 	}
 }
