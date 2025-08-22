@@ -1,36 +1,34 @@
 <?php
 /**
- * SLME Loader – zorgt dat Frontend correct wordt geladen en geïnitialiseerd.
+ * Loader – laadt alle onderdelen en start ze op.
  */
 
 namespace SLME;
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit;
-}
+if ( ! defined( 'ABSPATH' ) ) { exit; }
 
 class Loader {
 
-	/**
-	 * Wordt aangeroepen vanuit de hoofdplugin (sensei-lesson-map-editor.php).
-	 */
 	public static function init() : void {
 
-		// Zorg dat de Frontend class beschikbaar is vóór we ::init() aanroepen.
-		if ( ! class_exists( '\SLME\Frontend' ) ) {
-			$frontend_file = __DIR__ . '/class-slme-frontend.php';
-			if ( file_exists( $frontend_file ) ) {
-				require_once $frontend_file;
-			} else {
-				// Vriendelijke melding in plaats van een fatale error.
-				add_action( 'admin_notices', function () {
-					echo '<div class="notice notice-error"><p>SLME: Bestand <code>includes/class-slme-frontend.php</code> niet gevonden.</p></div>';
-				} );
-				return;
-			}
+		$includes_dir = __DIR__;
+		$plugin_root  = plugin_dir_path( dirname( __FILE__ ) ); // root van de plugin
+
+		// Vereiste klassen inladen
+		require_once $includes_dir . '/class-slme-frontend.php';
+		require_once $plugin_root . 'admin/class-slme-admin.php';
+
+		// Optioneel (AJAX handlers)
+		$ajax_file = $includes_dir . '/class-slme-ajax.php';
+		if ( file_exists( $ajax_file ) ) {
+			require_once $ajax_file;
 		}
 
-		// Frontend bootstrap (static init aanwezig in class-slme-frontend.php).
-		\SLME\Frontend::init();
+		// Klassen initialiseren
+		Frontend::init();
+		Admin::init();
+		if ( class_exists( __NAMESPACE__ . '\\Ajax' ) ) {
+			Ajax::init();
+		}
 	}
 }
