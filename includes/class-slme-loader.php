@@ -1,34 +1,54 @@
 <?php
 /**
- * Loader – laadt alle onderdelen en start ze op.
+ * Loader – laadt classes en start plugin onderdelen.
  */
-
 namespace SLME;
 
-if ( ! defined( 'ABSPATH' ) ) { exit; }
+if ( ! class_exists( '\SLME\Loader' ) ) {
 
-class Loader {
+	class Loader {
 
-	public static function init() : void {
+		/** @var Frontend */
+		private static $frontend;
+		/** @var Admin */
+		private static $admin;
+		/** @var Ajax */
+		private static $ajax;
 
-		$includes_dir = __DIR__;
-		$plugin_root  = plugin_dir_path( dirname( __FILE__ ) ); // root van de plugin
+		/**
+		 * Wordt aangeroepen vanuit het hoofd‑pluginbestand (op plugins_loaded).
+		 */
+		public static function init() {
+			self::load_files();
 
-		// Vereiste klassen inladen
-		require_once $includes_dir . '/class-slme-frontend.php';
-		require_once $plugin_root . 'admin/class-slme-admin.php';
+			self::$frontend = new Frontend();
+			self::$frontend->init(); // <-- Bestond eerder niet; nu aanwezig.
 
-		// Optioneel (AJAX handlers)
-		$ajax_file = $includes_dir . '/class-slme-ajax.php';
-		if ( file_exists( $ajax_file ) ) {
-			require_once $ajax_file;
+			self::$ajax = new Ajax();
+			self::$ajax->init();
+
+			if ( is_admin() ) {
+				self::$admin = new Admin();
+				self::$admin->init();
+			}
 		}
 
-		// Klassen initialiseren
-		Frontend::init();
-		Admin::init();
-		if ( class_exists( __NAMESPACE__ . '\\Ajax' ) ) {
-			Ajax::init();
+		/**
+		 * Zorgt dat de class-bestanden er zijn; geen dubbele includes.
+		 */
+		private static function load_files() {
+			$base = __DIR__; // .../includes
+
+			// Volgorde is belangrijk: eerst frontend/admin, dan ajax oké.
+			if ( ! class_exists( '\SLME\Frontend' ) ) {
+				require_once $base . '/class-slme-frontend.php';
+			}
+			if ( ! class_exists( '\SLME\Admin' ) ) {
+				require_once $base . '/class-slme-admin.php';
+			}
+			if ( ! class_exists( '\SLME\Ajax' ) ) {
+				require_once $base . '/class-slme-ajax.php';
+			}
 		}
 	}
 }

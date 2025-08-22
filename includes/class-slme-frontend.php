@@ -1,77 +1,111 @@
 <?php
 /**
- * Frontend – shortcode en assets voor de voorkant.
+ * Frontend – shortcode en assets voor de cursusweergave.
  */
-
 namespace SLME;
 
-if ( ! defined( 'ABSPATH' ) ) { exit; }
+if ( ! class_exists( '\SLME\Frontend' ) ) {
 
-class Frontend {
+	class Frontend {
 
-	public static function init() : void {
-		add_shortcode( 'sensei_lesson_map', [ __CLASS__, 'render_shortcode' ] );
-		add_action( 'wp_enqueue_scripts', [ __CLASS__, 'register_assets' ] );
-	}
+		/**
+		 * Hooks registreren.
+		 */
+		public function init() {
+			add_action( 'wp_enqueue_scripts', [ $this, 'enqueue_assets' ] );
 
-	/**
-	 * Alleen registreren; pas enqueuen als de shortcode rendert.
-	 */
-	public static function register_assets() : void {
-		$version = defined( 'SLME_VERSION' ) ? SLME_VERSION : '0.2.7';
-
-		wp_register_style(
-			'slme-frontend',
-			plugins_url( '../assets/frontend.css', __FILE__ ),
-			[],
-			$version
-		);
-
-		// frontend.js alleen registreren als het bestand echt bestaat
-		$frontend_js_path = plugin_dir_path( dirname( __FILE__ ) ) . 'assets/frontend.js';
-		if ( file_exists( $frontend_js_path ) ) {
-			wp_register_script(
-				'slme-frontend',
-				plugins_url( '../assets/frontend.js', __FILE__ ),
-				[ 'jquery' ],
-				$version,
-				true
-			);
+			// Shortcode blijft gelijk aan de stabiele versie:
+			add_shortcode( 'slme_course_map', [ $this, 'render_shortcode' ] );
 		}
-	}
 
-	public static function render_shortcode( $atts = [] ) : string {
-		$atts = shortcode_atts(
-			[
-				'course_id' => get_the_ID(),
-				'display'   => 'columns', // standaard
-			],
-			$atts,
-			'sensei_lesson_map'
-		);
+		/**
+		 * CSS/JS laden voor voorkant.
+		 */
+		public function enqueue_assets() {
+			// Gebruik plugins_url met relatief pad vanaf dit bestand (blijft robuust).
+			$css = plugins_url( '../assets/frontend.css', __FILE__ );
+			$js  = plugins_url( '../assets/frontend.js', __FILE__ );
 
-		// Assets alleen nu enqueuen (want de shortcode staat er)
-		wp_enqueue_style( 'slme-frontend' );
-		if ( wp_script_is( 'slme-frontend', 'registered' ) ) {
+			wp_register_style( 'slme-frontend', $css, [], '1.0.0' );
+			wp_enqueue_style( 'slme-frontend' );
+
+			wp_register_script( 'slme-frontend', $js, [ 'jquery' ], '1.0.0', true );
+
+			// Iconen — blijven in /assets/ (GEEN submap), zoals je hebt aangegeven.
+			$icons = [
+				'klaar' => plugins_url( '../assets/klaar.svg', __FILE__ ),
+				'niet'  => plugins_url( '../assets/niet.svg', __FILE__ ),
+				'lock'  => plugins_url( '../assets/lock.svg', __FILE__ ),
+			];
+
+			wp_localize_script( 'slme-frontend', 'SLME_FRONTEND', [
+				'icons' => $icons,
+			] );
+
 			wp_enqueue_script( 'slme-frontend' );
 		}
 
-		$course_id = (int) $atts['course_id'];
-		$display   = (string) $atts['display'];
+		/**
+		 * Shortcode output.
+		 * Voorbeeld: [slme_course_map] of [slme_course_map course_id="123"]
+		 */
+		public function render_shortcode( $atts = [] ) {
+			$atts = shortcode_atts( [
+				'course_id' => 0,
+			], $atts, 'slme_course_map' );
 
-		$template = plugin_dir_path( dirname( __FILE__ ) ) . 'templates/grid-columns.php';
+			$course_id = absint( $atts['course_id'] );
+			if ( ! $course_id ) {
+				$maybe = $this->detect_course_id();
+				if ( $maybe ) {
+					$course_id = $maybe;
+				}
+			}
 
-		ob_start();
+			if ( ! $course_id ) {
+				// Toon een kleine melding i.p.v. leeg scherm, maar breek niet hard af.
+				return '<div class="slme-notice">Geen cursus gevonden voor de kaartweergave.</div>';
+			}
 
-		if ( file_exists( $template ) ) {
-			// Variabelen beschikbaar maken in het template
-			$slme_course_id = $course_id;
-			$slme_display   = $display;
+			// Laad template /templates/grid-columns.php (blijft exact zo heten).
+			$template = $this->get_template_path( 'grid-columns.php' );
+			if ( ! file_exists( $template ) ) {
+				return '<div class="slme-notice">Template grid-columns.php ontbreekt in /templates/.</div>';
+			}
+
+			// Maak data beschikbaar voor de template.
+			$context = [
+				'course_id' => $course_id,
+				// Als je layout of opties per cursus in meta opslaat:
+				'layout'    => get_post_meta( $course_id, '_slme_layout', true ),
+			];
+
+			ob_start();
+			// In de template kun je $context gebruiken.
+			$slme = $context; // kortere alias in template.
 			include $template;
-		} else {
-			echo '<div class="slme-warning">SLME: template <code>templates/grid-columns.php</code> niet gevonden.</div>';
+			return ob_get_clean();
 		}
 
-		return (string) ob_get_clean();
+		/**
+		 * Bepaal course_id op een cursuspagina.
+		 */
+		private function detect_course_id() : int {
+			if ( is_singular() ) {
+				$post = get_post();
+				if ( $post && in_array( $post->post_type, [ 'course', 'sensei_course' ], true ) ) {
+					return (int) $post->ID;
+				}
+			}
+			return 0;
+		}
+
+		/**
+		 * Absolute pad naar templatebestand.
+		 */
+		private function get_template_path( string $file ) : string {
+			// /includes -> terug naar plugin root -> /templates/...
+			return dirname( __DIR__ ) . '/templates/' . ltrim( $file, '/' );
+		}
 	}
 }
