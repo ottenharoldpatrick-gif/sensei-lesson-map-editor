@@ -1,179 +1,80 @@
 <?php
-/**
- * Admin: Lesson Map Editor metabox + opslaan (robuust).
- *
- * @package SLME
- */
-
-defined( 'ABSPATH' ) || exit;
-
-if ( ! class_exists( 'SLME_Admin' ) ) :
-
+if ( ! defined( 'ABSPATH' ) ) exit;
 class SLME_Admin {
+  public static function init(){ add_action('admin_menu',[__CLASS__,'menu']); }
+  public static function menu(){
+    add_submenu_page('edit.php?post_type=course','Lesson Map Editor','Lesson Map Editor','edit_posts','slme-editor',[__CLASS__,'render_page']);
+  }
+  private static function get_course_list(): array {
+    $q=new WP_Query(['post_type'=>'course','posts_per_page'=>50,'post_status'=>'publish','orderby'=>'title','order'=>'ASC']);
+    $out=[]; foreach($q->posts as $p){ $out[]=['id'=>$p->ID,'title'=>$p->post_title]; } return $out;
+  }
+  public static function render_page(){
+    $course_id = isset($_GET['course_id']) ? intval($_GET['course_id']) : 0;
+    $state = $course_id ? get_post_meta($course_id,'_slme_state',true) : [];
+    $layout = $state['layout'] ?? 'free'; $tileSize = $state['tileSize'] ?? 'md'; $bgId = intval($state['bgId'] ?? 0);
+    $bgUrl = $bgId ? wp_get_attachment_image_url($bgId,'large') : '';
+    $lessons = $course_id ? SLME_Templates::get_lessons_grouped($course_id) : [];
 
-	/**
-	 * Init hooks.
-	 */
-	public static function init() {
-		// Metabox op Sensei 'course' post type.
-		add_action( 'add_meta_boxes_course', [ __CLASS__, 'add_metabox' ] );
+    echo '<div class="wrap slme-wrap"><h1>Lesson Map Editor</h1>';
+    echo '<form id="slme-form" method="post" onsubmit="return false;">';
+    wp_nonce_field('slme_nonce');
+    echo '<input type="hidden" id="slme-nonce" value="'.esc_attr(wp_create_nonce('slme_nonce')).'"/>';
+    echo '<label>Cursus: <select id="slme-course" name="course_id" onchange="location.href=\'?post_type=course&page=slme-editor&course_id=\'+this.value;"><option value="">— kies cursus —</option>';
+    foreach(self::get_course_list() as $c){ echo '<option value="'.esc_attr($c['id']).'" '.selected($course_id,$c['id'],false).'>'.esc_html($c['title']).'</option>'; } 
+    echo '</select></label>';
 
-		// Fallback: sommige setups roepen alleen 'add_meta_boxes' aan.
-		add_action( 'add_meta_boxes', function( $post_type ) {
-			if ( 'course' === $post_type ) {
-				self::add_metabox();
-			}
-		}, 10, 1 );
+    if($course_id){
+      echo '<div class="slme-toolbar">';
+      echo '<label><input type="radio" name="slme_layout" value="free" '.checked($layout,'free',false).'> Vrije kaart (standaard)</label>';
+      echo '<label><input type="radio" name="slme_layout" value="columns" '.checked($layout,'columns',false).'> Kolommen (per module)</label>';
+      echo '<label>Tile grootte: <select id="slme-size"><option value="sm" '.selected($tileSize,'sm',false).'>Klein</option><option value="md" '.selected($tileSize,'md',false).'>Midden</option><option value="lg" '.selected($tileSize,'lg',false).'>Groot</option></select></label>';
+      echo '<span class="slme-bg-tools" '.($layout==='columns'?'style="display:none"':'').'><button id="slme-pick-bg" class="button">Achtergrond kiezen</button> <button id="slme-clear-bg" class="button">Leegmaken</button><input type="hidden" id="slme-bg-id" value="'.esc_attr($bgId).'"></span>';
+      echo '<button id="slme-save" class="button button-primary">Opslaan</button> <button id="slme-reset" class="button">Reset</button>';
+      echo '</div>';
+      echo '<input type="hidden" id="slme-state" value="'.esc_attr(wp_json_encode($state)).'"/>';
 
-		// Opslaan via AJAX.
-		add_action( 'wp_ajax_slme_save_map', [ __CLASS__, 'handle_save_map' ] );
-	}
+      // Free layout
+      echo '<div class="slme-layout slme-layout--free" '.($layout!=='free'?'style="display:none"':'').'>';
+      echo '<div id="slme-bg-preview" class="slme-free-canvas" style="background-image:url(\''.(esc_url($bgUrl)).'\');">';
+      foreach($lessons as $mid=>$arr){ foreach($arr as $l){ $lid=$l['ID']; $pos=$state['positions'][$lid]??['x'=>10,'y'=>10,'z'=>1]; $tag=$state['tags'][$lid]??''; $img=$l['thumb']; $done=$l['completed'];
+        echo '<div class="slme-tile slme-tile--'.esc_attr($tileSize).'" data-lesson="'.esc_attr($lid).'" style="left:'.intval($pos['x']).'px; top:'.intval($pos['y']).'px; z-index:'.intval($pos['z']).';">';
+        if($img){ echo '<img src="'.esc_url($img).'" alt="">'; }
+        echo '<span class="slme-badge">'.($done?'✓':'✕').'</span><span class="slme-tag">'.esc_html($tag).'</span>';
+        echo '<div class="slme-hover"><div><strong>'.esc_html($l['title']).'</strong><br/>Voortgang: '.($done?'100%':'0%').'</div></div>';
+        echo '<div class="slme-z-buttons"><button class="slme-z-up" type="button">▲</button><button class="slme-z-down" type="button">▼</button></div>';
+        echo '</div>';
+      } }
+      echo '</div>';
+      echo '<p><em>Tip:</em> Sleep tegels, gebruik ▲/▼ om lagen te wijzigen. Tag (3 tekens) invullen hieronder.</p>';
+      echo '<table class="widefat striped"><thead><tr><th>Les</th><th>Tag (max 3 tekens)</th></tr></thead><tbody>';
+      foreach($lessons as $mid=>$arr){ foreach($arr as $l){ $lid=$l['ID']; $tag=$state['tags'][$lid]??'';
+        echo '<tr><td>'.esc_html($l['title']).'</td><td><input class="slme-tag-input" data-lesson="'.esc_attr($lid).'" value="'.esc_attr($tag).'" maxlength="3"/></td></tr>';
+      } }
+      echo '</tbody></table>';
+      echo '</div>'; // free
 
-	/**
-	 * Metabox registreren.
-	 */
-	public static function add_metabox() {
-		add_meta_box(
-			'slme_metabox',
-			__( 'Lesson Map Editor', 'slme' ),
-			[ __CLASS__, 'render_metabox' ],
-			'course',
-			'normal',
-			'high'
-		);
-	}
-
-	/**
-	 * Metabox HTML.
-	 *
-	 * - Toont editor UI + inline preview scaffold
-	 * - Media button voor achtergrond
-	 * - Layout toggle (Vrije kaart / Kolommen)
-	 * - Opslaan & Reset knoppen
-	 */
-	public static function render_metabox( $post ) {
-		wp_nonce_field( 'slme_admin', 'slme_admin_nonce' );
-
-		$course_id        = (int) $post->ID;
-		$layout_mode      = get_post_meta( $course_id, '_slme_layout_mode', true ); // 'free' | 'columns'
-		$layout_mode      = $layout_mode ? $layout_mode : 'free';
-		$bg_id            = (int) get_post_meta( $course_id, '_slme_background_id', true );
-		$tile_size        = get_post_meta( $course_id, '_slme_tile_size', true );   // 's' | 'm' | 'l' | custom (px)
-		$tile_size        = $tile_size ? $tile_size : 'm';
-		$positions_json   = get_post_meta( $course_id, '_slme_positions', true );   // JSON met posities
-		$positions_json   = $positions_json ? $positions_json : '{}';
-
-		?>
-		<div class="slme-metabox-wrap" data-course-id="<?php echo esc_attr( $course_id ); ?>">
-			<div class="slme-controls">
-				<div class="slme-control">
-					<label><strong><?php esc_html_e( 'Weergave', 'slme' ); ?></strong></label>
-					<label style="margin-right:10px;">
-						<input type="radio" name="slme_layout_mode" value="free" <?php checked( $layout_mode, 'free' ); ?> />
-						<?php esc_html_e( 'Vrije kaart (standaard)', 'slme' ); ?>
-					</label>
-					<label>
-						<input type="radio" name="slme_layout_mode" value="columns" <?php checked( $layout_mode, 'columns' ); ?> />
-						<?php esc_html_e( 'Kolommen', 'slme' ); ?>
-					</label>
-				</div>
-
-				<div class="slme-control">
-					<label><strong><?php esc_html_e( 'Achtergrond', 'slme' ); ?></strong></label>
-					<div class="slme-bg-row">
-						<input type="hidden" id="slme_background_id" value="<?php echo esc_attr( $bg_id ); ?>" />
-						<button type="button" class="button" id="slme_pick_bg"><?php esc_html_e( 'Kies uit Media', 'slme' ); ?></button>
-						<button type="button" class="button" id="slme_clear_bg"><?php esc_html_e( 'Verwijder', 'slme' ); ?></button>
-						<span id="slme_bg_label" style="margin-left:8px; opacity:.8;">
-							<?php echo $bg_id ? esc_html( 'ID: ' . $bg_id ) : esc_html__( 'Geen gekozen', 'slme' ); ?>
-						</span>
-					</div>
-				</div>
-
-				<div class="slme-control">
-					<label><strong><?php esc_html_e( 'Tegelgrootte', 'slme' ); ?></strong></label>
-					<select id="slme_tile_size">
-						<option value="s" <?php selected( $tile_size, 's' ); ?>><?php esc_html_e( 'Klein', 'slme' ); ?></option>
-						<option value="m" <?php selected( $tile_size, 'm' ); ?>><?php esc_html_e( 'Midden', 'slme' ); ?></option>
-						<option value="l" <?php selected( $tile_size, 'l' ); ?>><?php esc_html_e( 'Groot', 'slme' ); ?></option>
-					</select>
-					<input type="number" id="slme_tile_custom" placeholder="<?php esc_attr_e( 'of px (bijv. 120)', 'slme' ); ?>" min="60" step="10" style="width:140px;margin-left:6px;" />
-				</div>
-
-				<div class="slme-actions">
-					<button type="button" class="button button-primary" id="slme_save"><?php esc_html_e( 'Opslaan', 'slme' ); ?></button>
-					<button type="button" class="button" id="slme_reset"><?php esc_html_e( 'Reset', 'slme' ); ?></button>
-					<span id="slme_save_status" style="margin-left:10px;"></span>
-				</div>
-			</div>
-
-			<hr/>
-
-			<div class="slme-preview-note" style="margin:6px 0 12px;opacity:.8;">
-				<?php esc_html_e( 'Inline preview van de kaart. Sleep tegels (HTML5 drag & drop). Tekstlabel (3 tekens) kun je per tegel invullen.', 'slme' ); ?>
-			</div>
-
-			<!-- Scaffold voor de preview; JS voegt hier de echte tegels in -->
-			<div id="slme_canvas"
-				data-layout="<?php echo esc_attr( $layout_mode ); ?>"
-				data-bg-id="<?php echo esc_attr( $bg_id ); ?>"
-				data-size="<?php echo esc_attr( $tile_size ); ?>"
-				data-positions="<?php echo esc_attr( $positions_json ); ?>">
-			</div>
-		</div>
-		<?php
-	}
-
-	/**
-	 * AJAX: opslaan van layout, achtergrond en posities.
-	 */
-	public static function handle_save_map() {
-		check_ajax_referer( 'slme_admin', 'nonce' );
-
-		if ( ! current_user_can( 'edit_posts' ) ) {
-			wp_send_json_error( [ 'message' => 'Geen permissie' ], 403 );
-		}
-
-		$course_id = isset( $_POST['course_id'] ) ? intval( $_POST['course_id'] ) : 0;
-		if ( ! $course_id || 'course' !== get_post_type( $course_id ) ) {
-			wp_send_json_error( [ 'message' => 'Ongeldige cursus' ], 400 );
-		}
-
-		$layout_mode = isset( $_POST['layout_mode'] ) ? sanitize_key( wp_unslash( $_POST['layout_mode'] ) ) : 'free';
-		if ( ! in_array( $layout_mode, [ 'free', 'columns' ], true ) ) {
-			$layout_mode = 'free';
-		}
-
-		$bg_id = isset( $_POST['background_id'] ) ? intval( $_POST['background_id'] ) : 0;
-
-		$tile_size = isset( $_POST['tile_size'] ) ? sanitize_text_field( wp_unslash( $_POST['tile_size'] ) ) : 'm';
-		// Toestaan: s|m|l of puur getal (custom px).
-		if ( ! in_array( $tile_size, [ 's', 'm', 'l' ], true ) ) {
-			$tile_size = preg_replace( '/[^0-9]/', '', $tile_size );
-		}
-
-		$positions = isset( $_POST['positions'] ) ? wp_unslash( $_POST['positions'] ) : '{}';
-		// Laat basis JSON toe; extra sanitatie: verwijder alle tags & control chars.
-		$positions = wp_kses( $positions, [] );
-		$positions = preg_replace( '/[^\{\}\[\]\":,0-9a-zA-Z\.\-\_\s]/', '', $positions );
-
-		update_post_meta( $course_id, '_slme_layout_mode', $layout_mode );
-		update_post_meta( $course_id, '_slme_background_id', $bg_id );
-		update_post_meta( $course_id, '_slme_tile_size', $tile_size );
-		update_post_meta( $course_id, '_slme_positions', $positions );
-
-		wp_send_json_success( [
-			'message' => __( 'Opgeslagen', 'slme' ),
-			'saved'   => [
-				'layout_mode'   => $layout_mode,
-				'background_id' => $bg_id,
-				'tile_size'     => $tile_size,
-			],
-		] );
-	}
+      // Columns layout
+      echo '<div class="slme-layout slme-layout--columns" '.($layout!=='columns'?'style="display:none"':'').'>';
+      $mod_count = count($lessons);
+      echo '<div class="slme-columns slme-frontend-map" data-modules style="--slme-mod-count:'.$mod_count.'">';
+      foreach($lessons as $mid=>$arr){
+        echo '<section class="slme-module">';
+        foreach($arr as $l){ $lid=$l['ID']; $img=$l['thumb']; $done=$l['completed']; $tag=$state['tags'][$lid]??'';
+          echo '<div class="slme-tile" tabindex="0">';
+          if($img){ echo '<img src="'.esc_url($img).'" alt="">'; }
+          echo '<span class="slme-badge">'.($done?'✓':'✕').'</span>';
+          if($tag){ echo '<span class="slme-tag">'.esc_html($tag).'</span>'; }
+          echo '<div class="slme-hover"><div><strong>'.esc_html($l['title']).'</strong><br/>Voortgang: '.($done?'100%':'0%').'</div></div>';
+          echo '</div>';
+        }
+        echo '</section>';
+      }
+      echo '</div><p><em>Opmerking:</em> Kolommen gebruiken <strong>geen</strong> achtergrondafbeelding. Tegelgrootte schaalt automatisch per aantal modules.</p></div>';
+    } else {
+      echo '<p>Kies hierboven eerst een cursus.</p>';
+    }
+    echo '</form></div>';
+  }
 }
-
-endif;
-
-// Boot.
 SLME_Admin::init();
