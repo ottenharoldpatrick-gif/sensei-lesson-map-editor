@@ -1,7 +1,7 @@
 <?php
 /**
  * Frontend bootstrap – levert [slme view="columns"] shortcode
- * Namespace en klassenaam zijn afgestemd op de loader: SLME\Frontend
+ * Houdt de bestaande map-/bestandsstructuur aan (templates/grid-columns.php, assets/frontend.css).
  */
 
 namespace SLME;
@@ -13,15 +13,14 @@ if ( ! defined( 'ABSPATH' ) ) {
 class Frontend {
 
 	/**
-	 * Static init die door de loader wordt aangeroepen.
-	 * Houdt compatibel met includes/class-slme-loader.php: ::init()
+	 * Static init die door de Loader wordt aangeroepen.
 	 */
 	public static function init() : void {
 		new self();
 	}
 
 	/**
-	 * Constructor: registreert assets en shortcode.
+	 * Registreer assets en shortcode.
 	 */
 	public function __construct() {
 		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_assets' ) );
@@ -39,7 +38,7 @@ class Frontend {
 
 	/**
 	 * Shortcode: [slme view="columns" course_id=""]
-	 * We renderen via templates/grid-columns.php (stabiele naam/locatie).
+	 * Render via templates/grid-columns.php (bestaande/stabiele bestandsnaam).
 	 */
 	public function shortcode( $atts = array(), $content = '' ) : string {
 		$atts = shortcode_atts(
@@ -56,19 +55,17 @@ class Frontend {
 			$course_id = get_the_ID();
 		}
 
-		// Alleen renderen op een Sensei cursus of expliciete course_id die een cursus is.
+		// Alleen tonen op een Sensei cursus of een geldige course_id.
 		if ( $course_id && 'course' !== get_post_type( $course_id ) ) {
 			return '';
 		}
 
-		$plugin_root   = dirname( __DIR__ ); // plugin-root map
-		$template_file = $plugin_root . '/templates/grid-columns.php';
-
+		$template_file = dirname( __DIR__ ) . '/templates/grid-columns.php';
 		if ( ! file_exists( $template_file ) ) {
-			return '<div class="slme-notice">SLME template niet gevonden (templates/grid-columns.php).</div>';
+			return '<div class="slme-notice">SLME template ontbreekt: <code>templates/grid-columns.php</code>.</div>';
 		}
 
-		// Variabele beschikbaar in template.
+		// Variabele voor in de template
 		$slme_course_id = $course_id;
 
 		ob_start();
