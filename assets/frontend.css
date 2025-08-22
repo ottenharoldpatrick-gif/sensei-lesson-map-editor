@@ -1,86 +1,108 @@
-/* ================
-   SLME Kolommenweergave
-   Bestand: assets/frontend.css  (NIET front.css)
-   ================ */
+/* === SLME Kolommenweergave === */
 
-.slme-notice {
-  padding: 12px 14px;
-  background: #fff3cd;
-  border: 1px solid #ffeeba;
-  color: #856404;
-  border-radius: 8px;
-  margin: 12px 0;
-}
-
-/* Container voor alle modules (rijen) */
 .slme-grid-columns {
-  display: grid;
-  gap: 24px;
+  display: block;
 }
 
-/* Kop boven iedere rij (1x boven hele rij) */
+/* Rij-header met module-naam */
+.slme-row {
+  margin-bottom: 28px;
+}
+
 .slme-row-header {
-  margin-bottom: 8px;
+  margin: 0 0 12px 0;
 }
 
 .slme-row-title {
-  margin: 0;
-  font-size: 1.25rem;
+  font-size: 1.1rem;
   line-height: 1.3;
-  font-weight: 700;
+  margin: 0;
+  color: #0f172a;
+  word-break: break-word;
 }
 
-/* De tegel-rij per module */
-.slme-row {
-  --gap: 14px;
-}
-
+/* Tile-groep (responsive kolommen – maximaal 5) */
 .slme-row-tiles {
-  display: flex;
-  flex-wrap: wrap;   /* bij kleinere schermen wrapt een extra kolom automatisch naar de volgende regel */
-  gap: var(--gap);
+  display: grid;
+  grid-gap: 12px;
 }
 
-/* Basis tegel */
+/* De breedte (kolommen) wordt door JS/PHP via data-cols gezet; hier responsief neerzetten */
+.slme-row[data-cols="1"] .slme-row-tiles { grid-template-columns: repeat(1, minmax(0, 1fr)); }
+.slme-row[data-cols="2"] .slme-row-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.slme-row[data-cols="3"] .slme-row-tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.slme-row[data-cols="4"] .slme-row-tiles { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.slme-row[data-cols="5"] .slme-row-tiles { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+
+/* Responsief: minder kolommen op smallere schermen (kolommen stapelen, maar tegels blijven zelfde breedte in de grid) */
+@media (max-width: 1200px) {
+  .slme-row[data-cols="5"] .slme-row-tiles { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+@media (max-width: 992px) {
+  .slme-row[data-cols="5"] .slme-row-tiles,
+  .slme-row[data-cols="4"] .slme-row-tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width: 768px) {
+  .slme-row[data-cols="5"] .slme-row-tiles,
+  .slme-row[data-cols="4"] .slme-row-tiles,
+  .slme-row[data-cols="3"] .slme-row-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 560px) {
+  .slme-row .slme-row-tiles { grid-template-columns: repeat(1, minmax(0, 1fr)); }
+}
+
+/* === Tile === */
 .slme-tile {
-  position: relative;
-  border-radius: 12px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
   overflow: hidden;
-  background: #f6f7f9;
-  box-shadow: 0 1px 2px rgba(0,0,0,.06);
+  position: relative;
+  transition: box-shadow .15s ease, transform .15s ease;
+}
+.slme-tile:hover {
+  box-shadow: 0 4px 16px rgba(0,0,0,.08);
+  transform: translateY(-1px);
 }
 
-/* Klikbare laag */
 .slme-tile-link {
   display: block;
-  color: inherit;
   text-decoration: none;
-  outline: none;
+  color: inherit;
 }
 
-/* A: mediavlak – gebruikt als achtergrond (cover), vaste hoogte zodat tegels niet “uitrekken” */
 .slme-tile-media {
   width: 100%;
-  height: 140px;                  /* constante hoogte: tegels worden NIET breder of hoger als er minder kolommen zijn */
+  padding-top: 62%; /* verhouding afbeelding */
   background-size: cover;
-  background-position: center;
-  background-color: #e9edf2;     /* fallback tint als er geen thumbnail is */
+  background-position: center center;
+  position: relative;
 }
 
-/* Footer met module-naam en les-titel (in 2 regels blokjes) */
+/* B: status-icoon linksboven op de afbeelding */
+.slme-icon-status {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  width: 22px;
+  height: 22px;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  z-index: 2;
+}
+/* Voorbeeld: laat de JS/PHP togglen tussen klaar.svg en niet.svg via class op tile
+   (hier gaan we er van uit dat dit al eerder is ingesteld) */
+.slme-tile.is-complete .slme-icon-status { background-image: url('../icons/klaar.svg'); }
+.slme-tile.is-incomplete .slme-icon-status { background-image: url('../icons/niet.svg'); }
+
+/* Footer met alleen LESNAAM */
 .slme-tile-footer {
-  padding: 10px 12px 12px;
+  position: relative;          /* nodig om lock in de hoek te kunnen plaatsen */
+  padding: 10px 36px 12px 12px;/* extra rechter padding voor lock-icoon */
   background: #fff;
   border-top: 1px solid #eef2f6;
-}
-
-.slme-tile-module-name {
-  font-size: .95rem;
-  line-height: 1.3;
-  font-weight: 600;
-  margin: 0 0 4px 0;
-  /* meervoudige regels toegestaan, geen ellipsis hier */
-  word-break: break-word;
+  min-height: 44px;
 }
 
 .slme-tile-lesson-title {
@@ -88,96 +110,24 @@
   line-height: 1.3;
   color: #475569;
   word-break: break-word;
+  margin-right: 6px;
 }
 
-/* B: status-icoon rechtsboven (afgerond of niet) */
-.slme-icon {
-  position: absolute;
-  width: 22px;
-  height: 22px;
-  z-index: 2;
+/* D: lock-icoon RECHTS in de footer-hoek (alleen wanneer niet ingelogd) */
+.slme-icon-lock {
+  width: 18px;
+  height: 18px;
   background-repeat: no-repeat;
   background-position: center;
-  background-size: 22px 22px;
-  filter: drop-shadow(0 1px 1px rgba(0,0,0,.25));
+  background-size: contain;
 }
-
-.slme-icon-status {
-  top: 8px;
+.slme-icon-lock--in-footer {
+  position: absolute;
   right: 8px;
+  bottom: 10px;
 }
 
-/* D: lock linksboven als inloggen vereist */
-.slme-icon-lock {
-  top: 8px;
-  left: 8px;
-}
-
-/* Status iconen – gebruik de door jou geleverde PNG’s (blijven PNG’s, geen submappen!) */
-.slme-tile.is-complete .slme-icon-status {
-  background-image: url("../assets/klaar.png");  /* afgerond */
-}
-.slme-tile.is-incomplete .slme-icon-status {
-  background-image: url("../assets/niet.png");   /* niet afgerond */
-}
-
-/* Lock icoon */
+/* Lock-icon bron (omgezet naar SVG-bestand in assets/icons/lock.svg) */
 .slme-tile.is-locked .slme-icon-lock {
-  background-image: url("../assets/lock.png");
-}
-
-/* ----------------------------
-   KOLOMBREEDTES (max 5 kolommen)
-   - We rekenen per module-rij (data-cols is min(5, aantal lessen))
-   - Tegels hebben vaste breedte-percentage per rij, zodat ze NIET breder worden als er minder lessen zijn
-   ---------------------------- */
-
-/* Helper: bereken breedtes per data-cols (desktop/breed) */
-.slme-row[data-cols="5"] .slme-tile { width: calc((100% - (4 * var(--gap))) / 5); }
-.slme-row[data-cols="4"] .slme-tile { width: calc((100% - (3 * var(--gap))) / 4); }
-.slme-row[data-cols="3"] .slme-tile { width: calc((100% - (2 * var(--gap))) / 3); }
-.slme-row[data-cols="2"] .slme-tile { width: calc((100% - (1 * var(--gap))) / 2); }
-.slme-row[data-cols="1"] .slme-tile { width: 100%; }
-
-/* Hover/focus */
-.slme-tile-link:hover .slme-tile-media,
-.slme-tile-link:focus .slme-tile-media {
-  filter: brightness(0.95);
-}
-.slme-tile-link:focus {
-  box-shadow: 0 0 0 3px rgba(59,130,246,.35);
-}
-
-/* ----------------------------
-   RESPONSIVE: op kleinere schermen neemt het aantal kolommen af.
-   De “extra” kolommen vallen automatisch door flex-wrap naar de volgende regel.
-   ---------------------------- */
-
-/* max ~1200px: max 4 per rij */
-@media (max-width: 1200px) {
-  .slme-row[data-cols="5"] .slme-tile { width: calc((100% - (3 * var(--gap))) / 4); }
-}
-
-/* max ~992px: max 3 per rij */
-@media (max-width: 992px) {
-  .slme-row[data-cols="5"] .slme-tile,
-  .slme-row[data-cols="4"] .slme-tile {
-    width: calc((100% - (2 * var(--gap))) / 3);
-  }
-}
-
-/* max ~768px: max 2 per rij */
-@media (max-width: 768px) {
-  .slme-row[data-cols="5"] .slme-tile,
-  .slme-row[data-cols="4"] .slme-tile,
-  .slme-row[data-cols="3"] .slme-tile {
-    width: calc((100% - (1 * var(--gap))) / 2);
-  }
-}
-
-/* max ~480px: 1 per rij */
-@media (max-width: 480px) {
-  .slme-row .slme-tile {
-    width: 100% !important;
-  }
+  background-image: url('../icons/lock.svg');
 }
