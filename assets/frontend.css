@@ -1,133 +1,144 @@
-/* === SLME Kolommenweergave === */
+/* =========================================================
+   SLME – Frontend weergave (grid-columns.php)
+   - Max 5 kolommen op grote schermen
+   - Rijen = modules (met titel erboven)
+   - Tile: thumbnail met badge linksboven, lesnaam eronder met lock-rechts
+   ========================================================= */
 
-.slme-grid-columns {
+/* Container voor alle modules */
+.slme-modules-wrap {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Modulenaam 1x boven de rij */
+.slme-module-header {
+  font-size: 1.125rem;            /* ~18px */
+  font-weight: 600;
+  line-height: 1.3;
+  margin: 1.5rem 0 0.75rem 0;
+  word-break: break-word;
+  white-space: normal;
+}
+
+/* De rij met tiles (lessen) – responsive kolommen */
+.slme-module-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr)); /* max 5 kolommen */
+  gap: 14px;
+  margin-bottom: 1.75rem;
+}
+
+/* Responsiveness: kolommen nemen af bij kleinere schermen */
+@media (max-width: 1400px) {
+  .slme-module-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+@media (max-width: 1200px) {
+  .slme-module-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width: 900px) {
+  .slme-module-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 600px) {
+  .slme-module-grid { grid-template-columns: repeat(1, minmax(0, 1fr)); }
+}
+
+/* Tile basis */
+.slme-lesson-tile {
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border: 1px solid #e5e7eb;      /* licht grijs */
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 1px 2px rgba(0,0,0,.04);
+}
+
+/* Thumbnail + badge */
+.slme-thumb-wrap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 10;          /* prettige verhouding */
+  background: #f3f4f6;
+  overflow: hidden;
+}
+
+.slme-thumb-wrap > img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
   display: block;
 }
 
-/* Rij-header met module-naam */
-.slme-row {
-  margin-bottom: 28px;
+/* Badge afgerond/niet – linksboven op de thumbnail */
+.slme-badge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  width: 28px;
+  height: 28px;
+  display: block;
+  pointer-events: none;
+  user-select: none;
 }
 
-.slme-row-header {
-  margin: 0 0 12px 0;
+/* Body onder de thumbnail met alleen LESNAAM */
+.slme-lesson-body {
+  padding: 10px 12px 12px 12px;
 }
 
-.slme-row-title {
-  font-size: 1.1rem;
-  line-height: 1.3;
-  margin: 0;
-  color: #0f172a;
-  word-break: break-word;
-}
-
-/* Tile-groep (responsive kolommen – maximaal 5) */
-.slme-row-tiles {
-  display: grid;
-  grid-gap: 12px;
-}
-
-/* De breedte (kolommen) wordt door JS/PHP via data-cols gezet; hier responsief neerzetten */
-.slme-row[data-cols="1"] .slme-row-tiles { grid-template-columns: repeat(1, minmax(0, 1fr)); }
-.slme-row[data-cols="2"] .slme-row-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-.slme-row[data-cols="3"] .slme-row-tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-.slme-row[data-cols="4"] .slme-row-tiles { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-.slme-row[data-cols="5"] .slme-row-tiles { grid-template-columns: repeat(5, minmax(0, 1fr)); }
-
-/* Responsief: minder kolommen op smallere schermen (kolommen stapelen, maar tegels blijven zelfde breedte in de grid) */
-@media (max-width: 1200px) {
-  .slme-row[data-cols="5"] .slme-row-tiles { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-}
-@media (max-width: 992px) {
-  .slme-row[data-cols="5"] .slme-row-tiles,
-  .slme-row[data-cols="4"] .slme-row-tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-}
-@media (max-width: 768px) {
-  .slme-row[data-cols="5"] .slme-row-tiles,
-  .slme-row[data-cols="4"] .slme-row-tiles,
-  .slme-row[data-cols="3"] .slme-row-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-}
-@media (max-width: 560px) {
-  .slme-row .slme-row-tiles { grid-template-columns: repeat(1, minmax(0, 1fr)); }
-}
-
-/* === Tile === */
-.slme-tile {
-  background: #fff;
-  border: 1px solid #e5e7eb;
-  border-radius: 10px;
-  overflow: hidden;
-  position: relative;
-  transition: box-shadow .15s ease, transform .15s ease;
-}
-.slme-tile:hover {
-  box-shadow: 0 4px 16px rgba(0,0,0,.08);
-  transform: translateY(-1px);
-}
-
-.slme-tile-link {
+.slme-lesson-link {
   display: block;
   text-decoration: none;
   color: inherit;
 }
 
-.slme-tile-media {
-  width: 100%;
-  padding-top: 62%; /* verhouding afbeelding */
-  background-size: cover;
-  background-position: center center;
-  position: relative;
-}
-
-/* B: status-icoon linksboven op de afbeelding */
-.slme-icon-status {
-  position: absolute;
-  top: 8px;
-  left: 8px;
-  width: 22px;
-  height: 22px;
-  background-repeat: no-repeat;
-  background-position: center;
-  background-size: contain;
-  z-index: 2;
-}
-/* Voorbeeld: laat de JS/PHP togglen tussen klaar.svg en niet.svg via class op tile
-   (hier gaan we er van uit dat dit al eerder is ingesteld) */
-.slme-tile.is-complete .slme-icon-status { background-image: url('../icons/klaar.svg'); }
-.slme-tile.is-incomplete .slme-icon-status { background-image: url('../icons/niet.svg'); }
-
-/* Footer met alleen LESNAAM */
-.slme-tile-footer {
-  position: relative;          /* nodig om lock in de hoek te kunnen plaatsen */
-  padding: 10px 36px 12px 12px;/* extra rechter padding voor lock-icoon */
-  background: #fff;
-  border-top: 1px solid #eef2f6;
-  min-height: 44px;
-}
-
-.slme-tile-lesson-title {
-  font-size: .9rem;
-  line-height: 1.3;
-  color: #475569;
+/* Lesnaam links, slotje rechts (alleen indien nodig) */
+.slme-lesson-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 0.975rem;
+  line-height: 1.35;
+  min-height: 2.2em; /* houdt wat ruimte wanneer er een slotje staat */
   word-break: break-word;
-  margin-right: 6px;
 }
 
-/* D: lock-icoon RECHTS in de footer-hoek (alleen wanneer niet ingelogd) */
-.slme-icon-lock {
+/* Lock rechts van de lesnaam */
+.slme-lock {
   width: 18px;
   height: 18px;
-  background-repeat: no-repeat;
-  background-position: center;
-  background-size: contain;
-}
-.slme-icon-lock--in-footer {
-  position: absolute;
-  right: 8px;
-  bottom: 10px;
+  flex: 0 0 auto;
+  margin-left: 6px;
+  opacity: 0.9;
 }
 
-/* Lock-icon bron (omgezet naar SVG-bestand in assets/icons/lock.svg) */
-.slme-tile.is-locked .slme-icon-lock {
-  background-image: url('../icons/lock.svg');
+/* Hover state – subtiel */
+.slme-lesson-tile:hover {
+  border-color: #d1d5db;
+  box-shadow: 0 2px 6px rgba(0,0,0,.06);
 }
+
+/* Toegankelijkheid: focus voor keyboard users */
+.slme-lesson-link:focus-visible,
+.slme-lesson-tile:focus-within {
+  outline: 2px solid #2563eb;   /* blauw */
+  outline-offset: -2px;
+}
+
+/* Donkere themes (optioneel, niet-invasief) */
+@media (prefers-color-scheme: dark) {
+  .slme-lesson-tile {
+    background: #111827;
+    border-color: #1f2937;
+    box-shadow: none;
+  }
+  .slme-module-header { color: #e5e7eb; }
+  .slme-lesson-title { color: #f3f4f6; }
+  .slme-thumb-wrap { background: #1f2937; }
+}
+
+/* Kleine quality-of-life tweaks */
+.slme-lesson-title img { display: inline-block; }

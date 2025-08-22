@@ -1,130 +1,129 @@
 <?php
 /**
- * SLME – Kolommenweergave (max 5 kolommen)
- * - Module-naam boven de rij
- * - In de tile alleen de LESNAAM
- * - Lock-icoon (D) in de rechterhoek van de titelbalk (footer) en alleen als inloggen vereist is
+ * Template: grid-columns.php
+ * Weergave per module (rij), max 5 kolommen op grote schermen.
+ * Onder de afbeelding: ALLEEN de LESNAAM.
+ * Boven de rij: de modulenaam (meerdere regels toegestaan).
+ * Badge (klaar/niet) linksboven op beeld; lock rechts naast lesnaam, alleen als inloggen vereist.
+ *
+ * Vereist in scope:
+ * - $course_id (int)
+ * - $modules (array uit Sensei()->modules->get_course_modules($course_id))
+ * - $assets_url (url naar /assets/)
+ * - $is_logged_in (bool)
+ * - $user_id (int)
  */
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit;
+if ( ! defined( 'ABSPATH' ) ) exit;
+
+// Helper: bepaal of les “voltooid” is door huidige gebruiker (Sensei)
+function slme_is_lesson_completed( $lesson_id, $user_id ) {
+	if ( ! $user_id ) return false;
+	// Sensei <= 4.x: Sensei_Utils::user_completed_lesson( $lesson_id, $user_id )
+	if ( class_exists( '\Sensei_Utils' ) && method_exists( '\Sensei_Utils', 'user_completed_lesson' ) ) {
+		return (bool) \Sensei_Utils::user_completed_lesson( $lesson_id, $user_id );
+	}
+	// fallback: false
+	return false;
 }
 
-$course_id = get_the_ID();
-if ( ! $course_id ) {
-	$course_id = isset( $_GET['course_id'] ) ? absint( $_GET['course_id'] ) : 0;
+// Helper: of les vergrendeld is voor niet-ingelogden
+function slme_is_lesson_locked_for_guests( $lesson_id, $is_logged_in ) {
+	if ( $is_logged_in ) return false;
+
+	// Sensei kent "Preview" les (open voor gasten). Metadata verschilt per versie:
+	// - _lesson_preview == 'open' of 'preview'
+	$preview = get_post_meta( $lesson_id, '_lesson_preview', true );
+	if ( in_array( $preview, [ 'open', 'preview', '1', 1, true ], true ) ) {
+		return false; // open voor gasten
+	}
+	return true; // login vereist
 }
-if ( ! $course_id ) {
-	echo '<div class="slme-notice">Geen cursus gevonden om kolommen te renderen.</div>';
+
+// Badge-iconen (PNG, zoals aangeleverd)
+$icon_done  = esc_url( $assets_url . 'klaar.png' );
+$icon_todo  = esc_url( $assets_url . 'niet.png' );
+$icon_lock  = esc_url( $assets_url . 'lock.png' );
+
+// Als er geen modules zijn, toon niets (stil falen zoals gevraagd)
+if ( empty( $modules ) ) {
+	echo '<div class="slme-modules-wrap"></div>';
 	return;
 }
 
-$current_user_id = get_current_user_id();
-$is_logged_in    = is_user_logged_in();
+echo '<div class="slme-modules-wrap">';
 
-/**
- * Modules ophalen
- */
-$modules = array();
-if ( function_exists( 'Sensei' ) && isset( Sensei()->modules ) && method_exists( Sensei()->modules, 'get_course_modules' ) ) {
-	$modules = Sensei()->modules->get_course_modules( $course_id );
-}
+foreach ( $modules as $module ) {
 
-if ( empty( $modules ) ) {
-	$modules = array( (object) array(
-		'term_id' => 0,
-		'name'    => __( 'Zonder module', 'slme' ),
-	) );
-}
+	$module_id    = isset( $module->term_id ) ? intval( $module->term_id ) : 0;
+	$module_name  = isset( $module->name ) ? $module->name : '';
+	$module_name  = esc_html( $module_name );
 
-/**
- * Lessen per module volgens Sensei-volgorde
- */
-$fetch_lessons_for_module = function( $module_term_id ) use ( $course_id ) {
-	$lessons = array();
+	// Lessen binnen deze module in Sensei-volgorde
+	$lessons = [];
+	if ( function_exists( 'Sensei' ) && isset( Sensei()->modules ) && method_exists( Sensei()->modules, 'get_lessons' ) ) {
+		$lessons = Sensei()->modules->get_lessons( $module_id, $course_id );
+	}
+	if ( ! is_array( $lessons ) ) $lessons = [];
 
-	// Sensei-module volgorde wanneer beschikbaar
-	if ( function_exists( 'Sensei' ) && isset( Sensei()->modules ) && method_exists( Sensei()->modules, 'get_lessons' ) && $module_term_id ) {
-		$lessons = Sensei()->modules->get_lessons( $module_term_id, $course_id );
-	} else {
-		// Fallback: menu_order binnen de cursus
-		$q = new WP_Query( array(
-			'post_type'      => 'lesson',
-			'posts_per_page' => -1,
-			'orderby'        => 'menu_order',
-			'order'          => 'ASC',
-			'meta_query'     => array(
-				array(
-					'key'   => '_lesson_course',
-					'value' => $course_id,
-				),
-			),
-		) );
-		$lessons = $q->posts;
+	// Module header (C) 1x boven de rij
+	echo '<div class="slme-module-header">' . $module_name . '</div>';
+
+	// Grid-rij (vaste 5 kolommen op groot scherm via CSS)
+	echo '<div class="slme-module-grid">';
+
+	foreach ( $lessons as $lesson ) {
+		$lesson_id    = is_object( $lesson ) ? $lesson->ID : intval( $lesson );
+		if ( ! $lesson_id ) continue;
+
+		$lesson_title = get_the_title( $lesson_id );
+		$lesson_title = esc_html( $lesson_title );
+		$lesson_url   = get_permalink( $lesson_id );
+		$thumb        = get_the_post_thumbnail_url( $lesson_id, 'medium_large' );
+
+		// status (B)
+		$is_done = slme_is_lesson_completed( $lesson_id, $user_id );
+
+		// lock (D)
+		$show_lock = slme_is_lesson_locked_for_guests( $lesson_id, $is_logged_in );
+
+		echo '<article class="slme-lesson-tile">';
+
+			// A: thumbnail + statusbadge linksboven
+			echo '<div class="slme-thumb-wrap">';
+				if ( $thumb ) {
+					echo '<img src="' . esc_url( $thumb ) . '" alt="">';
+				} else {
+					// veilige fallback zonder WooCommerce
+					$placeholder = 'data:image/svg+xml;utf8,' . rawurlencode(
+						'<svg xmlns="http://www.w3.org/2000/svg" width="800" height="500">
+						   <rect width="100%" height="100%" fill="#f3f4f6"/>
+						   <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#9ca3af" font-size="20">Geen afbeelding</text>
+						 </svg>'
+					);
+					echo '<img src="' . esc_url( $placeholder ) . '" alt="">';
+				}
+				// B: afgerond / niet afgerond icoon
+				$badge = $is_done ? $icon_done : $icon_todo;
+				echo '<img class="slme-badge" src="' . $badge . '" alt="">';
+			echo '</div>';
+
+			// Lesinfo: alleen LESNAAM, met lock-icoon rechts indien nodig
+			echo '<div class="slme-lesson-body">';
+				echo '<a class="slme-lesson-link" href="' . esc_url( $lesson_url ) . '">';
+					echo '<div class="slme-lesson-title">';
+						echo $lesson_title;
+						if ( $show_lock ) {
+							echo '<img class="slme-lock" src="' . $icon_lock . '" alt="">';
+						}
+					echo '</div>';
+				echo '</a>';
+			echo '</div>';
+
+		echo '</article>';
 	}
 
-	if ( $lessons && is_array( $lessons ) ) {
-		return array_map( function( $item ) {
-			return is_numeric( $item ) ? get_post( $item ) : $item;
-		}, $lessons );
-	}
+	echo '</div>'; // .slme-module-grid
+}
 
-	return array();
-};
-?>
-<div class="slme-grid-columns" aria-label="Kolommenweergave cursus">
-	<?php foreach ( $modules as $module ) :
-		$module_id   = isset( $module->term_id ) ? intval( $module->term_id ) : 0;
-		$module_name = isset( $module->name ) ? $module->name : __( 'Module', 'slme' );
-
-		$lessons = $fetch_lessons_for_module( $module_id );
-		if ( empty( $lessons ) ) {
-			continue;
-		}
-
-		$cols = min( 5, count( $lessons ) );
-		?>
-		<section class="slme-row" data-cols="<?php echo esc_attr( $cols ); ?>">
-			<header class="slme-row-header">
-				<h3 class="slme-row-title"><?php echo esc_html( $module_name ); ?></h3>
-			</header>
-
-			<div class="slme-row-tiles">
-				<?php foreach ( $lessons as $lesson_post ) :
-					$lesson_id     = is_object( $lesson_post ) ? $lesson_post->ID : intval( $lesson_post );
-					$lesson_link   = get_permalink( $lesson_id );
-					$thumb         = get_the_post_thumbnail_url( $lesson_id, 'large' );
-					$lesson_title  = get_the_title( $lesson_id );
-
-					// B: status (afgerond of niet)
-					$is_complete = false;
-					if ( class_exists( 'Sensei_Utils' ) && $current_user_id ) {
-						$is_complete = (bool) Sensei_Utils::user_completed_lesson( $lesson_id, $current_user_id );
-					}
-
-					// D: lock alleen tonen als niet ingelogd (les niet vrij toegankelijk)
-					$show_lock = ! $is_logged_in;
-					?>
-					<article class="slme-tile<?php echo $is_complete ? ' is-complete' : ' is-incomplete'; ?><?php echo $show_lock ? ' is-locked' : ''; ?>">
-						<a class="slme-tile-link" href="<?php echo esc_url( $lesson_link ); ?>" <?php echo $show_lock ? 'aria-disabled="true"' : ''; ?>>
-							<!-- A: Uitgelichte afbeelding als achtergrond -->
-							<div class="slme-tile-media" style="<?php echo $thumb ? 'background-image:url(' . esc_url( $thumb ) . ');' : ''; ?>"></div>
-
-							<!-- B: Status icoon (linksboven op de afbeelding) -->
-							<span class="slme-icon slme-icon-status" aria-hidden="true"></span>
-
-							<!-- Footer met alleen LESNAAM, lock (D) naar rechterhoek van de footer -->
-							<footer class="slme-tile-footer">
-								<div class="slme-tile-lesson-title"><?php echo esc_html( $lesson_title ); ?></div>
-
-								<?php if ( $show_lock ) : ?>
-									<span class="slme-icon slme-icon-lock slme-icon-lock--in-footer" aria-hidden="true"></span>
-								<?php endif; ?>
-							</footer>
-						</a>
-					</article>
-				<?php endforeach; ?>
-			</div>
-		</section>
-	<?php endforeach; ?>
-</div>
+echo '</div>'; // .slme-modules-wrap
