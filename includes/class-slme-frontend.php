@@ -1,51 +1,68 @@
 <?php
-namespace SLME;
+/**
+ * Frontend bootstrap – levert [slme view="columns"] shortcode
+ */
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
 
-if ( ! defined( 'ABSPATH' ) ) { exit; }
+if ( ! class_exists( 'SLME_Frontend' ) ) :
 
-class Frontend {
+class SLME_Frontend {
 
-    public static function init() {
-        add_shortcode( 'sensei_course_map', [ __CLASS__, 'shortcode' ] );
-        add_action( 'wp_enqueue_scripts', [ __CLASS__, 'assets' ] );
-    }
+	public function __construct() {
+		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_assets' ) );
+		add_shortcode( 'slme', array( $this, 'shortcode' ) );
+	}
 
-    public static function assets() {
-        wp_register_style( 'slme-frontend', SLME_URL . 'assets/frontend.css', [], SLME_VERSION );
-        wp_register_script( 'slme-frontend', SLME_URL . 'assets/frontend.js', [], SLME_VERSION, true );
-    }
+	/**
+	 * Laad frontend CSS altijd; lichtgewicht en voorkomt “geen stijl”-issues.
+	 */
+	public function enqueue_assets() {
+		$ver = defined( 'SLME_VERSION' ) ? SLME_VERSION : '1.0.0';
+		$css = plugins_url( 'assets/frontend.css', dirname( __FILE__ ) );
+		wp_enqueue_style( 'slme-frontend', $css, array(), $ver );
+	}
 
-    public static function shortcode( $atts = [] ) {
-        $atts = shortcode_atts([
-            'course_id' => 0,
-            'mode'      => '',
-        ], $atts, 'sensei_course_map' );
+	/**
+	 * [slme view="columns"]
+	 */
+	public function shortcode( $atts = array(), $content = '' ) {
+		$atts = shortcode_atts( array(
+			'view'      => 'columns', // we gebruiken 'columns' = grid-columns.php
+			'course_id' => 0,
+		), $atts, 'slme' );
 
-        $course_id = (int)$atts['course_id'];
-        if ( $course_id <= 0 ) {
-            return '<div class="slme-notice">Geen course_id opgegeven.</div>';
-        }
+		$course_id = absint( $atts['course_id'] );
+		if ( ! $course_id ) {
+			// probeer huidig bericht (cursus)
+			$course_id = get_the_ID();
+		}
 
-        $settings = Utils::get_map_settings( $course_id );
-        $mode = $atts['mode'] ?: ( $settings['mode'] ?? 'kolommen' );
-        wp_enqueue_style( 'slme-frontend' );
-        wp_enqueue_script( 'slme-frontend' );
+		// Beperk rendering tot cursuspagina's (veiligheid + performance)
+		if ( get_post_type( $course_id ) !== 'course' ) {
+			return ''; // niks renderen als het geen cursus is
+		}
 
-        ob_start();
-        if ( $mode === 'vrij' ) {
-            $data = [
-                'course_id' => $course_id,
-                'free'      => $settings['free'] ?? ['background_id'=>0,'tiles'=>[]],
-            ];
-            include SLME_DIR . 'templates/free-canvas.php';
-        } else {
-            $modules = Utils::get_lessons_for_course_by_modules( $course_id );
-            $data = [
-                'course_id' => $course_id,
-                'modules'   => $modules,
-            ];
-            include SLME_DIR . 'templates/grid-columns.php';
-        }
-        return ob_get_clean();
-    }
+		// Kies template – WE HOUDEN VAST AAN DE STABIELE NAAM:
+		$template_file = plugin_dir_path( __DIR__ ) . 'templates/grid-columns.php';
+
+		if ( ! file_exists( $template_file ) ) {
+			return '<div class="slme-notice">SLME template niet gevonden (templates/grid-columns.php).</div>';
+		}
+
+		// Maak $course_id beschikbaar in template indien gewenst
+		setup_postdata( get_post( $course_id ) );
+
+		ob_start();
+		include $template_file;
+		return ob_get_clean();
+	}
+}
+
+endif;
+
+// Bootstrap
+if ( class_exists( 'SLME_Frontend' ) ) {
+	new SLME_Frontend();
 }
