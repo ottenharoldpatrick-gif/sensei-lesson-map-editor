@@ -1,0 +1,16 @@
+.slme-grid { display: grid; gap: 10px; }
+.slme-grid.columns-1 { grid-template-columns: 1fr; }
+.slme-grid.columns-2 { grid-template-columns: 1fr 1fr; }
+.slme-grid.columns-3 { grid-template-columns: 1fr 1fr 1fr; }
+.slme-grid.columns-4 { grid-template-columns: repeat(4, 1fr); }
+.slme-grid.columns-5 { grid-template-columns: repeat(5, 1fr); }
+.slme-grid.columns-6 { grid-template-columns: repeat(6, 1fr); }
+
+.slme-card { border: 1px solid #ddd; background:#fff; padding:8px; display:flex; flex-direction:column; gap:6px; }
+.slme-card .slme-thumb { width:100%; aspect-ratio: 4/3; object-fit: cover; }
+.slme-card .slme-title { font-weight: 600; }
+.slme-module-title { font-weight:700; margin:6px 0; }
+
+.slme-free-wrap { position: relative; min-height: 480px; border: 1px solid #ddd; background-size: cover; background-repeat: no-repeat; overflow: hidden; }
+.slme-free-tile { position: absolute; border: 1px solid #444; background: rgba(255,255,255,.95); padding:6px; overflow:hidden; display:flex; align-items:center; justify-content:center; }
+.slme-free-tile .slme-free-label { position:absolute; top:4px; right:6px; font-weight:700; background:#fff; padding:1px 4px; border-radius:2px; }

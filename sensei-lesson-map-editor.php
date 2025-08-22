@@ -1,40 +1,21 @@
 <?php
 /**
  * Plugin Name: Sensei Lesson Map Editor
- * Description: Visuele editor (Vrije kaart & Kolommen) voor Sensei LMS cursussen.
- * Version: 0.2.7
- * Author: SLME
+ * Description: Visuele cursuskaart voor Sensei LMS (Kolommen of Vrije kaart) met AJAX opslaan/reset.
+ * Version: 0.3.0
+ * Author: Harold & Team
+ * Requires PHP: 8.0
  */
 
-if ( ! defined( 'ABSPATH' ) ) {
-    exit;
-}
+if ( ! defined( 'ABSPATH' ) ) { exit; }
 
-if ( ! defined( 'SLME_VERSION' ) ) {
-    define( 'SLME_VERSION', '0.2.7' );
-}
-if ( ! defined( 'SLME_DIR' ) ) {
-    define( 'SLME_DIR', plugin_dir_path( __FILE__ ) );
-}
-if ( ! defined( 'SLME_URL' ) ) {
-    define( 'SLME_URL', plugin_dir_url( __FILE__ ) );
-}
+define( 'SLME_VERSION', '0.3.0' );
+define( 'SLME_DIR', plugin_dir_path( __FILE__ ) );
+define( 'SLME_URL', plugin_dir_url( __FILE__ ) );
 
-/**
- * Belangrijk: laad alléén de nieuwe bestanden uit /includes.
- * Oude admin-bestanden NIET meer gebruiken.
- */
+require_once SLME_DIR . 'includes/class-slme-loader.php';
 
-// Admin (menu, editor, AJAX save/reset/preview)
-require_once SLME_DIR . 'includes/class-slme-admin.php';
-
-// Frontend weergave
-if ( file_exists( SLME_DIR . 'includes/class-slme-frontend.php' ) ) {
-    require_once SLME_DIR . 'includes/class-slme-frontend.php';
-}
-
-// (Optioneel) Legacy placeholder voor oude include, doet niets.
-// Laat staan om foutloos te blijven als iemand oude requires vergeet.
-if ( file_exists( SLME_DIR . 'includes/class-slme-ajax.php' ) ) {
-    require_once SLME_DIR . 'includes/class-slme-ajax.php';
-}
+add_action( 'plugins_loaded', function() {
+    // Laad alles via Loader (voorkomt double-declare).
+    \SLME\Loader::init();
+} );
