@@ -1,79 +1,183 @@
-/* === SLME Kolommenweergave (front) — GEEN submappen ==================== */
-/* Tiles blijven vaste breedte; aantal kolommen past zich aan schermbreedte aan.
-   Elke rij = 1 module. Minder lessen => minder kolommen; kolommen worden niet breder. */
+/* ================
+   SLME Kolommenweergave
+   Bestand: assets/frontend.css  (NIET front.css)
+   ================ */
 
-.slme-columns-wrap {
-  --tile-w: 220px;      /* vaste tilebreedte (niet schalen) */
-  --tile-gap: 16px;
-  --tile-radius: 18px;
-  --cols: 5;            /* JS zet dit per rij dynamisch */
+.slme-notice {
+  padding: 12px 14px;
+  background: #fff3cd;
+  border: 1px solid #ffeeba;
+  color: #856404;
+  border-radius: 8px;
+  margin: 12px 0;
 }
 
-.slme-module-row { margin: 24px 0 40px; }
-.slme-module-header { margin: 0 0 12px; }
-
-.slme-module-title {
-  margin: 0;
-  font-size: 1.1rem;
-  line-height: 1.3;
-  word-break: break-word;
-  white-space: normal;  /* meerdere regels toegestaan */
-}
-
-.slme-grid {
+/* Container voor alle modules (rijen) */
+.slme-grid-columns {
   display: grid;
-  grid-auto-rows: auto;
-  grid-template-columns: repeat(var(--cols), var(--tile-w));
-  gap: var(--tile-gap);
-  justify-content: flex-start; /* niet uitrekken of centreren */
+  gap: 24px;
 }
 
+/* Kop boven iedere rij (1x boven hele rij) */
+.slme-row-header {
+  margin-bottom: 8px;
+}
+
+.slme-row-title {
+  margin: 0;
+  font-size: 1.25rem;
+  line-height: 1.3;
+  font-weight: 700;
+}
+
+/* De tegel-rij per module */
+.slme-row {
+  --gap: 14px;
+}
+
+.slme-row-tiles {
+  display: flex;
+  flex-wrap: wrap;   /* bij kleinere schermen wrapt een extra kolom automatisch naar de volgende regel */
+  gap: var(--gap);
+}
+
+/* Basis tegel */
 .slme-tile {
-  width: var(--tile-w);
   position: relative;
-  border-radius: var(--tile-radius);
+  border-radius: 12px;
   overflow: hidden;
-  background: #f5f5f5;
+  background: #f6f7f9;
   box-shadow: 0 1px 2px rgba(0,0,0,.06);
 }
 
-.slme-tile-link { display:block; color:inherit; text-decoration:none; }
-
-.slme-a img {
+/* Klikbare laag */
+.slme-tile-link {
   display: block;
+  color: inherit;
+  text-decoration: none;
+  outline: none;
+}
+
+/* A: mediavlak – gebruikt als achtergrond (cover), vaste hoogte zodat tegels niet “uitrekken” */
+.slme-tile-media {
   width: 100%;
-  height: 140px;          /* cropt naar tile */
-  object-fit: cover;
+  height: 140px;                  /* constante hoogte: tegels worden NIET breder of hoger als er minder kolommen zijn */
+  background-size: cover;
+  background-position: center;
+  background-color: #e9edf2;     /* fallback tint als er geen thumbnail is */
 }
 
-.slme-b, .slme-d {
-  position: absolute;
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
+/* Footer met module-naam en les-titel (in 2 regels blokjes) */
+.slme-tile-footer {
+  padding: 10px 12px 12px;
   background: #fff;
-  box-shadow: 0 1px 2px rgba(0,0,0,.15);
-  display: grid;
-  place-items: center;
+  border-top: 1px solid #eef2f6;
 }
 
-.slme-b { top: 8px; right: 8px; }
-.slme-d { bottom: 8px; right: 8px; }
-
-.slme-b img, .slme-d img {
-  width: 26px;
-  height: 26px;
-  display: block;
+.slme-tile-module-name {
+  font-size: .95rem;
+  line-height: 1.3;
+  font-weight: 600;
+  margin: 0 0 4px 0;
+  /* meervoudige regels toegestaan, geen ellipsis hier */
+  word-break: break-word;
 }
 
-/* melding als er geen lessen zijn */
-.slme-no-lessons { grid-column: 1 / -1; opacity: .7; }
+.slme-tile-lesson-title {
+  font-size: .9rem;
+  line-height: 1.3;
+  color: #475569;
+  word-break: break-word;
+}
 
-/* === Responsiveness (minder kolommen; tiles NIET breder) ================ */
-@media (max-width: 1200px) { .slme-columns-wrap { --cols: 4; } }
-@media (max-width: 992px)  { .slme-columns-wrap { --cols: 3; } }
-@media (max-width: 768px)  { .slme-columns-wrap { --cols: 2; } }
-@media (max-width: 520px)  {
-  .slme-columns-wrap { --cols: 1; }
-  .slme-a img { height: 160px; }
+/* B: status-icoon rechtsboven (afgerond of niet) */
+.slme-icon {
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  z-index: 2;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 22px 22px;
+  filter: drop-shadow(0 1px 1px rgba(0,0,0,.25));
+}
+
+.slme-icon-status {
+  top: 8px;
+  right: 8px;
+}
+
+/* D: lock linksboven als inloggen vereist */
+.slme-icon-lock {
+  top: 8px;
+  left: 8px;
+}
+
+/* Status iconen – gebruik de door jou geleverde PNG’s (blijven PNG’s, geen submappen!) */
+.slme-tile.is-complete .slme-icon-status {
+  background-image: url("../assets/klaar.png");  /* afgerond */
+}
+.slme-tile.is-incomplete .slme-icon-status {
+  background-image: url("../assets/niet.png");   /* niet afgerond */
+}
+
+/* Lock icoon */
+.slme-tile.is-locked .slme-icon-lock {
+  background-image: url("../assets/lock.png");
+}
+
+/* ----------------------------
+   KOLOMBREEDTES (max 5 kolommen)
+   - We rekenen per module-rij (data-cols is min(5, aantal lessen))
+   - Tegels hebben vaste breedte-percentage per rij, zodat ze NIET breder worden als er minder lessen zijn
+   ---------------------------- */
+
+/* Helper: bereken breedtes per data-cols (desktop/breed) */
+.slme-row[data-cols="5"] .slme-tile { width: calc((100% - (4 * var(--gap))) / 5); }
+.slme-row[data-cols="4"] .slme-tile { width: calc((100% - (3 * var(--gap))) / 4); }
+.slme-row[data-cols="3"] .slme-tile { width: calc((100% - (2 * var(--gap))) / 3); }
+.slme-row[data-cols="2"] .slme-tile { width: calc((100% - (1 * var(--gap))) / 2); }
+.slme-row[data-cols="1"] .slme-tile { width: 100%; }
+
+/* Hover/focus */
+.slme-tile-link:hover .slme-tile-media,
+.slme-tile-link:focus .slme-tile-media {
+  filter: brightness(0.95);
+}
+.slme-tile-link:focus {
+  box-shadow: 0 0 0 3px rgba(59,130,246,.35);
+}
+
+/* ----------------------------
+   RESPONSIVE: op kleinere schermen neemt het aantal kolommen af.
+   De “extra” kolommen vallen automatisch door flex-wrap naar de volgende regel.
+   ---------------------------- */
+
+/* max ~1200px: max 4 per rij */
+@media (max-width: 1200px) {
+  .slme-row[data-cols="5"] .slme-tile { width: calc((100% - (3 * var(--gap))) / 4); }
+}
+
+/* max ~992px: max 3 per rij */
+@media (max-width: 992px) {
+  .slme-row[data-cols="5"] .slme-tile,
+  .slme-row[data-cols="4"] .slme-tile {
+    width: calc((100% - (2 * var(--gap))) / 3);
+  }
+}
+
+/* max ~768px: max 2 per rij */
+@media (max-width: 768px) {
+  .slme-row[data-cols="5"] .slme-tile,
+  .slme-row[data-cols="4"] .slme-tile,
+  .slme-row[data-cols="3"] .slme-tile {
+    width: calc((100% - (1 * var(--gap))) / 2);
+  }
+}
+
+/* max ~480px: 1 per rij */
+@media (max-width: 480px) {
+  .slme-row .slme-tile {
+    width: 100% !important;
+  }
 }
