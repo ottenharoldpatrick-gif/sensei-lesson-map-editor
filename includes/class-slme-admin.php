@@ -1,39 +1,39 @@
 <?php
-/**
- * Loader – laadt klassen en start plugin.
- *
- * Houdt stabiele mapstructuur aan:
- *  - admin/class-slme-admin.php
- *  - includes/class-slme-frontend.php
- *  - includes/class-slme-ajax.php
- */
-
 namespace SLME;
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit;
-}
+if ( ! defined( 'ABSPATH' ) ) { exit; }
 
-if ( ! class_exists( '\SLME\Loader' ) ) {
+if ( ! class_exists( __NAMESPACE__ . '\Admin' ) ) {
 
-	class Loader {
+	class Admin {
 
-		public static function init() {
-			self::load_files();
-
-			// Init in vaste volgorde; methodes bestaan gegarandeerd.
-			Admin::init();
-			Frontend::init();
-			Ajax::init();
+		public static function init() : void {
+			add_action( 'admin_menu', [ __CLASS__, 'register_menu' ] );
 		}
 
-		private static function load_files() {
-			$base = plugin_dir_path( __FILE__ );
+		public static function register_menu() : void {
+			add_menu_page(
+				__( 'Sensei Cursus Maps', 'slme' ),
+				__( 'Sensei Cursus Maps', 'slme' ),
+				'manage_options',
+				'slme-maps',
+				[ __CLASS__, 'render_page' ],
+				'dashicons-screenoptions',
+				56
+			);
+		}
 
-			// LET OP: admin-bestand staat in /admin, niet in /includes.
-			require_once $base . '../admin/class-slme-admin.php';
-			require_once $base . 'class-slme-frontend.php';
-			require_once $base . 'class-slme-ajax.php';
+		public static function render_page() : void {
+			?>
+			<div class="wrap">
+				<h1><?php echo esc_html__( 'Sensei Cursus Maps', 'slme' ); ?></h1>
+				<p>
+					<?php echo esc_html__( 'Deze pagina is informatief. De weergave verschijnt automatisch op cursuspagina’s, of plaats handmatig:', 'slme' ); ?>
+					<br>
+					<code>[slme_grid_columns course_id="123"]</code>
+				</p>
+			</div>
+			<?php
 		}
 	}
 }
