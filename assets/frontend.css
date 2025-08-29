@@ -1,144 +1,19 @@
-/* =========================================================
-   SLME – Frontend weergave (grid-columns.php)
-   - Max 5 kolommen op grote schermen
-   - Rijen = modules (met titel erboven)
-   - Tile: thumbnail met badge linksboven, lesnaam eronder met lock-rechts
-   ========================================================= */
 
-/* Container voor alle modules */
-.slme-modules-wrap {
-  display: block;
-  width: 100%;
-  box-sizing: border-box;
-}
-
-/* Modulenaam 1x boven de rij */
-.slme-module-header {
-  font-size: 1.125rem;            /* ~18px */
-  font-weight: 600;
-  line-height: 1.3;
-  margin: 1.5rem 0 0.75rem 0;
-  word-break: break-word;
-  white-space: normal;
-}
-
-/* De rij met tiles (lessen) – responsive kolommen */
-.slme-module-grid {
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr)); /* max 5 kolommen */
-  gap: 14px;
-  margin-bottom: 1.75rem;
-}
-
-/* Responsiveness: kolommen nemen af bij kleinere schermen */
-@media (max-width: 1400px) {
-  .slme-module-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-}
-@media (max-width: 1200px) {
-  .slme-module-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-}
-@media (max-width: 900px) {
-  .slme-module-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-}
-@media (max-width: 600px) {
-  .slme-module-grid { grid-template-columns: repeat(1, minmax(0, 1fr)); }
-}
-
-/* Tile basis */
-.slme-lesson-tile {
-  display: flex;
-  flex-direction: column;
-  background: #fff;
-  border: 1px solid #e5e7eb;      /* licht grijs */
-  border-radius: 10px;
-  overflow: hidden;
-  box-shadow: 0 1px 2px rgba(0,0,0,.04);
-}
-
-/* Thumbnail + badge */
-.slme-thumb-wrap {
-  position: relative;
-  width: 100%;
-  aspect-ratio: 16 / 10;          /* prettige verhouding */
-  background: #f3f4f6;
-  overflow: hidden;
-}
-
-.slme-thumb-wrap > img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-
-/* Badge afgerond/niet – linksboven op de thumbnail */
-.slme-badge {
-  position: absolute;
-  top: 8px;
-  left: 8px;
-  width: 28px;
-  height: 28px;
-  display: block;
-  pointer-events: none;
-  user-select: none;
-}
-
-/* Body onder de thumbnail met alleen LESNAAM */
-.slme-lesson-body {
-  padding: 10px 12px 12px 12px;
-}
-
-.slme-lesson-link {
-  display: block;
-  text-decoration: none;
-  color: inherit;
-}
-
-/* Lesnaam links, slotje rechts (alleen indien nodig) */
-.slme-lesson-title {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  font-size: 0.975rem;
-  line-height: 1.35;
-  min-height: 2.2em; /* houdt wat ruimte wanneer er een slotje staat */
-  word-break: break-word;
-}
-
-/* Lock rechts van de lesnaam */
-.slme-lock {
-  width: 18px;
-  height: 18px;
-  flex: 0 0 auto;
-  margin-left: 6px;
-  opacity: 0.9;
-}
-
-/* Hover state – subtiel */
-.slme-lesson-tile:hover {
-  border-color: #d1d5db;
-  box-shadow: 0 2px 6px rgba(0,0,0,.06);
-}
-
-/* Toegankelijkheid: focus voor keyboard users */
-.slme-lesson-link:focus-visible,
-.slme-lesson-tile:focus-within {
-  outline: 2px solid #2563eb;   /* blauw */
-  outline-offset: -2px;
-}
-
-/* Donkere themes (optioneel, niet-invasief) */
-@media (prefers-color-scheme: dark) {
-  .slme-lesson-tile {
-    background: #111827;
-    border-color: #1f2937;
-    box-shadow: none;
-  }
-  .slme-module-header { color: #e5e7eb; }
-  .slme-lesson-title { color: #f3f4f6; }
-  .slme-thumb-wrap { background: #1f2937; }
-}
-
-/* Kleine quality-of-life tweaks */
-.slme-lesson-title img { display: inline-block; }
+.slge-lesson-grid-container{margin:1.5rem 0}
+.slge-module-section{margin-bottom:1.5rem}
+.slge-module-title{font-size:1.25rem;font-weight:600;margin:0 0 .75rem}
+.slge-lesson-grid{display:grid;grid-template-columns:repeat(var(--slge-desktop-cols,5),minmax(0,1fr));grid-gap:16px}
+@media (max-width:1024px){.slge-lesson-grid{grid-template-columns:repeat(var(--slge-tablet-cols,3),minmax(0,1fr))}}
+@media (max-width:768px){.slge-lesson-grid{grid-template-columns:repeat(var(--slge-mobile-cols,2),minmax(0,1fr))}}
+.slge-lesson-card{border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;background:#fff;transition:transform .1s ease,box-shadow .1s ease}
+.slge-lesson-card:hover{transform:translateY(-2px);box-shadow:0 6px 24px rgba(0,0,0,.08)}
+.slge-lesson-image-container{position:relative;aspect-ratio:16/9;background:#f3f4f6}
+.slge-lesson-image{width:100%;height:100%;object-fit:cover;display:block}
+.slge-lesson-status{position:absolute;top:8px;right:8px;display:flex;gap:6px;z-index:2}
+.slge-status-icon{width:28px;height:28px;border-radius:9999px;background:#ffffffcc;backdrop-filter: blur(3px);display:inline-flex;align-items:center;justify-content:center}
+.slge-status-icon img{width:20px;height:20px;display:block}
+.slge-lock-hint{display:none;position:absolute;top:36px;right:8px;background:#111827;color:#fff;font-size:12px;padding:6px 8px;border-radius:8px;box-shadow:0 6px 20px rgba(0,0,0,.2);max-width:220px;z-index:3}
+.slge-lesson-card.is-locked .slge-lesson-status:hover .slge-lock-hint{display:block}
+.slge-lesson-card.is-locked{opacity:.7;pointer-events:none}
+.slge-locked-title{cursor:not-allowed}
+.slge-lesson-title{padding:.75rem .9rem;font-weight:600;line-height:1.3}
