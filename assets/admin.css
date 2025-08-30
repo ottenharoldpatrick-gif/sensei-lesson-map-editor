@@ -1,27 +1,667 @@
+/* Sensei Lesson Grid Editor - Admin Styles */
 
-.slg-editor{margin-top:10px}
-.slg-controls{margin-bottom:10px}
-.slg-module{border:1px solid #e5e7eb; border-radius:10px; padding:10px; margin-bottom:12px; background:#fff}
-.slg-module-head{display:flex; gap:8px; align-items:center}
-.slg-module .slg-handle{cursor:grab}
-.slg-module-name{flex:1}
-.slg-tiles{list-style:none; margin:10px 0 0 0; padding:0; display:flex; flex-direction:column; gap:8px}
-.slg-tile{display:flex; gap:10px; align-items:flex-start; border:1px dashed #e5e7eb; padding:8px; border-radius:8px; background:#fafafa}
-.slg-thumb{width:72px; height:72px; background:#f3f4f6; border-radius:8px; overflow:hidden; display:flex; align-items:center; justify-content:center}
-.slg-thumb img{width:100%; height:100%; object-fit:cover}
-.slg-fields{flex:1; display:grid; grid-template-columns: 1fr; gap:6px}
-.slg-fields.is-bound .slg-title, .slg-fields.is-bound .slg-url{background:#f3f4f6; opacity:.8; pointer-events:none}
-.slg-row{display:flex; gap:8px; align-items:center}
+.slg-editor {
+  margin-top: 10px;
+}
+
+.slg-controls {
+  margin-bottom: 15px;
+  padding: 12px;
+  background: #f9f9f9;
+  border: 1px solid #e1e1e1;
+  border-radius: 8px;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.slg-controls .button {
+  margin: 0;
+}
+
+/* Module styles */
+.slg-module {
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 15px;
+  margin-bottom: 15px;
+  background: #f8fafc;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  transition: box-shadow 0.2s ease;
+}
+
+.slg-module:hover {
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  background: #f1f5f9;
+}
+
+.slg-module-head {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 10px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.slg-module .slg-handle {
+  cursor: grab;
+  color: #666;
+  transition: color 0.2s ease;
+}
+
+.slg-module .slg-handle:hover {
+  color: #2271b1;
+}
+
+.slg-module .slg-handle:active {
+  cursor: grabbing;
+}
+
+.slg-module-name {
+  flex: 1;
+  font-weight: 600;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 6px 8px;
+}
+
+.slg-module-name:focus {
+  border-color: #2271b1;
+  box-shadow: 0 0 0 1px #2271b1;
+  outline: none;
+}
+
+/* Tiles container */
+.slg-tiles {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 40px;
+}
+
+.slg-tiles:empty::after {
+  content: "Drop tiles here or click 'Add tile' to get started";
+  display: block;
+  padding: 20px;
+  text-align: center;
+  color: #666;
+  font-style: italic;
+  border: 2px dashed #ddd;
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+/* Individual tile styles */
+.slg-tile {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  border: 1px solid #e5e7eb;
+  padding: 12px;
+  border-radius: 8px;
+  background: #f8fafc;
+  transition: all 0.2s ease;
+}
+
+.slg-tile:hover {
+  border-color: #c3c4c7;
+  background: #eff6ff;
+}
+
+.slg-tile .slg-handle {
+  cursor: grab;
+  color: #666;
+  margin-top: 4px;
+}
+
+.slg-tile .slg-handle:hover {
+  color: #2271b1;
+}
+
+.slg-tile .slg-handle:active {
+  cursor: grabbing;
+}
+
+/* Thumbnail */
+.slg-thumb {
+  width: 72px;
+  height: 72px;
+  background: #f3f4f6;
+  border-radius: 8px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: 1px solid #e5e7eb;
+}
+
+.slg-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Fields container */
+.slg-fields {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+  min-width: 0; /* Prevent flex item from overflowing */
+}
+
+.slg-fields input[type="text"],
+.slg-fields input[type="url"],
+.slg-fields input[type="number"] {
+  width: 100%;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 6px 8px;
+  font-size: 14px;
+}
+
+.slg-fields input:focus {
+  border-color: #2271b1;
+  box-shadow: 0 0 0 1px #2271b1;
+  outline: none;
+}
+
+/* Bound state (when lesson is linked) */
+.slg-fields.is-bound .slg-title,
+.slg-fields.is-bound .slg-url {
+  background: #f3f4f6;
+  opacity: 0.8;
+  pointer-events: none;
+  position: relative;
+}
+
+.slg-fields.is-bound .slg-title[readonly],
+.slg-fields.is-bound .slg-url[readonly] {
+  cursor: not-allowed;
+}
+
+.slg-fields.is-bound .slg-title::before {
+  content: "📚 ";
+  position: absolute;
+  left: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 12px;
+}
+
+.slg-fields.is-bound .slg-url::before {
+  content: "🔗 ";
+  position: absolute;
+  left: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 12px;
+}
+
+/* Row layout for controls */
+.slg-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.slg-row input[type="number"] {
+  width: 120px;
+  flex-shrink: 0;
+}
+
+.slg-row .button {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+/* Linked lesson chip */
+.slg-chip {
+  background: #d1ecf1;
+  border: 1px solid #bee5eb;
+  color: #0c5460;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.slg-chip .button {
+  font-size: 11px;
+  padding: 2px 6px;
+  line-height: 1.2;
+  height: auto;
+  min-height: 0;
+}
+
+/* Sortable placeholders */
+.slg-module-placeholder {
+  height: 100px;
+  background: #f0f6fc;
+  border: 2px dashed #2271b1;
+  border-radius: 8px;
+  margin-bottom: 15px;
+  position: relative;
+}
+
+.slg-module-placeholder::after {
+  content: "Drop module here";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: #2271b1;
+  font-weight: 500;
+}
+
+.slg-tile-placeholder {
+  height: 96px;
+  background: #f0f6fc;
+  border: 2px dashed #2271b1;
+  border-radius: 6px;
+  margin-bottom: 10px;
+  position: relative;
+}
+
+.slg-tile-placeholder::after {
+  content: "Drop tile here";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: #2271b1;
+  font-size: 12px;
+}
+
 /* Lesson picker modal */
-.slg-lesson-modal{position:fixed;inset:0;z-index:100000;display:none}
-.slg-lesson-modal__backdrop{position:absolute;inset:0;background:rgba(0,0,0,.4)}
-.slg-lesson-modal__dialog{position:relative;max-width:720px;margin:6vh auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.25)}
-.slg-lesson-modal__head,.slg-lesson-modal__foot{padding:12px 16px;border-bottom:1px solid #e5e7eb;display:flex;justify-content:space-between;align-items:center}
-.slg-lesson-modal__foot{border-top:1px solid #e5e7eb;border-bottom:none}
-.slg-lesson-modal__body{padding:12px 16px}
-.slg-lesson-results{display:grid;grid-template-columns:1fr;gap:8px;margin-top:10px;max-height:50vh;overflow:auto}
-.slg-les-row{display:grid;grid-template-columns:56px 1fr auto;gap:10px;align-items:center;border:1px solid #e5e7eb;border-radius:10px;padding:8px;background:#fafafa}
-.slg-les-thumb{width:56px;height:56px;object-fit:cover;border-radius:8px;background:#f3f4f6}
-.slg-les-thumb--ph{display:flex;align-items:center;justify-content:center;color:#999;font-size:12px}
-.slg-les-title{font-weight:600}
-.slg-les-loading,.slg-les-empty{padding:8px;color:#555}
+.slg-lesson-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 100000;
+  display: none;
+  animation: fadeIn 0.2s ease;
+}
+
+.slg-lesson-modal__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(2px);
+}
+
+.slg-lesson-modal__dialog {
+  position: relative;
+  max-width: 720px;
+  margin: 6vh auto;
+  background: #fff;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  animation: slideIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideIn {
+  from { 
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+  }
+  to { 
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.slg-lesson-modal__head,
+.slg-lesson-modal__foot {
+  padding: 16px 20px;
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #f9fafb;
+}
+
+.slg-lesson-modal__foot {
+  border-top: 1px solid #e5e7eb;
+  border-bottom: none;
+}
+
+.slg-lesson-modal__head strong {
+  font-size: 16px;
+  color: #111827;
+}
+
+.slg-lesson-modal__close {
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  color: #6b7280;
+  transition: color 0.2s ease;
+}
+
+.slg-lesson-modal__close:hover {
+  color: #374151;
+}
+
+.slg-lesson-modal__body {
+  padding: 20px;
+  max-height: 60vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+#slg-lesson-search {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 14px;
+  margin-bottom: 15px;
+}
+
+#slg-lesson-search:focus {
+  border-color: #2271b1;
+  box-shadow: 0 0 0 1px #2271b1;
+  outline: none;
+}
+
+/* Lesson results */
+.slg-lesson-results {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+  max-height: 40vh;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.slg-lesson-results::-webkit-scrollbar {
+  width: 6px;
+}
+
+.slg-lesson-results::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.slg-lesson-results::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+.slg-lesson-results::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+.slg-les-row {
+  display: grid;
+  grid-template-columns: 56px 1fr auto;
+  gap: 12px;
+  align-items: center;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 10px;
+  background: #fafafa;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.slg-les-row:hover {
+  border-color: #2271b1;
+  background: #f0f6fc;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.slg-les-thumb {
+  width: 56px;
+  height: 56px;
+  object-fit: cover;
+  border-radius: 6px;
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+}
+
+.slg-les-thumb--ph {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #9ca3af;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.slg-les-title {
+  font-weight: 600;
+  color: #111827;
+  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.slg-les-loading,
+.slg-les-empty {
+  padding: 20px;
+  text-align: center;
+  color: #6b7280;
+  font-style: italic;
+}
+
+.slg-les-loading {
+  background: #f9fafb;
+  border-radius: 8px;
+}
+
+.slg-les-empty {
+  color: #9ca3af;
+}
+
+/* Button styling improvements */
+.slg-add-tile,
+.slg-pick-lesson,
+.slg-pick-media {
+  font-size: 13px;
+  padding: 4px 8px;
+  height: auto;
+  line-height: 1.4;
+}
+
+.slg-remove-module,
+.slg-remove-tile {
+  color: #dc3232;
+  text-decoration: none;
+  font-size: 18px;
+  font-weight: bold;
+  transition: color 0.2s ease;
+}
+
+.slg-remove-module:hover,
+.slg-remove-tile:hover {
+  color: #a00;
+}
+
+/* Loading states */
+.slg-saving .slg-module,
+.slg-saving .slg-tile {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+/* Error states */
+.slg-error {
+  color: #dc3232;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 4px;
+  padding: 8px 12px;
+  margin: 10px 0;
+}
+
+/* Success states */
+.slg-success {
+  color: #059669;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 4px;
+  padding: 8px 12px;
+  margin: 10px 0;
+}
+
+/* Responsive adjustments */
+@media (max-width: 782px) {
+  .slg-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .slg-module-head {
+    flex-wrap: wrap;
+  }
+  
+  .slg-module-name {
+    order: 1;
+    width: 100%;
+    margin-bottom: 8px;
+  }
+  
+  .slg-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .slg-row .button {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .slg-tile {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .slg-thumb {
+    align-self: center;
+  }
+  
+  .slg-lesson-modal__dialog {
+    margin: 2vh 10px;
+    max-width: none;
+  }
+  
+  .slg-les-row {
+    grid-template-columns: 1fr;
+    text-align: center;
+    gap: 8px;
+  }
+}
+
+/* Accessibility improvements */
+.slg-handle:focus {
+  outline: 2px solid #2271b1;
+  outline-offset: 2px;
+}
+
+.button:focus {
+  box-shadow: 0 0 0 2px #2271b1;
+}
+
+/* Animation for adding/removing items */
+.slg-module,
+.slg-tile {
+  animation: slideInFade 0.3s ease;
+}
+
+@keyframes slideInFade {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Improved form field styling */
+.form-table td label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+}
+
+.form-table input[type="checkbox"] {
+  margin: 0;
+}
+
+.description {
+  font-style: italic;
+  color: #666;
+  margin-top: 8px;
+}
+
+/* Shortcode display improvements */
+.slg-shortcode code {
+  background: #f1f1f1;
+  padding: 8px 12px;
+  border-radius: 4px;
+  display: block;
+  margin: 8px 0;
+  font-family: Monaco, Consolas, monospace;
+  word-break: break-all;
+}
+
+/* Dark mode support (if WordPress admin has dark mode) */
+@media (prefers-color-scheme: dark) {
+  .slg-module {
+    background: #f8fafc;
+    border-color: #e2e8f0;
+    color: #1e293b;
+  }
+  
+  .slg-tile {
+    background: #f1f5f9;
+    border-color: #e2e8f0;
+  }
+  
+  .slg-thumb {
+    background: #e2e8f0;
+    border-color: #cbd5e1;
+  }
+  
+  .slg-fields input {
+    background: #fff;
+    border-color: #e2e8f0;
+    color: #1e293b;
+  }
+  
+  .slg-lesson-modal__dialog {
+    background: #fff;
+    color: #1e293b;
+  }
+  
+  .slg-lesson-modal__head,
+  .slg-lesson-modal__foot {
+    background: #f8fafc;
+    border-color: #e2e8f0;
+  }
+}
