@@ -164,6 +164,14 @@
   display: block;
 }
 
+/* Dashicon fallback styling */
+.slge-status-icon .dashicons {
+  width: 28px;
+  height: 28px;
+  font-size: 18px;
+  line-height: 28px;
+}
+
 /* Lock hint tooltip */
 .slge-lock-hint {
   display: none;

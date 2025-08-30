@@ -602,13 +602,34 @@ class SLGE_Plugin {
         
         if ( $tile['lesson_id'] > 0 ) {
             echo '    <div class="slge-lesson-status">';
+            
+            // Status icon (complete/incomplete)
             echo '      <span class="slge-status-icon">';
-            echo '        <img src="' . esc_url( SLGE_PLUGIN_URL . 'assets/' . ( $status['is_complete'] ? 'klaar.png' : 'niet.png' ) ) . '" alt="' . esc_attr( $status['is_complete'] ? 'Complete' : 'Incomplete' ) . '" />';
+            $status_icon = $status['is_complete'] ? 'klaar.png' : 'niet.png';
+            $status_alt = $status['is_complete'] ? __( 'Complete', 'sensei-lesson-grid-editor' ) : __( 'Incomplete', 'sensei-lesson-grid-editor' );
+            
+            // Check if PNG file exists, otherwise fallback to dashicons
+            $status_icon_url = SLGE_PLUGIN_URL . 'assets/' . $status_icon;
+            if ( $this->file_exists_in_assets( $status_icon ) ) {
+                echo '        <img src="' . esc_url( $status_icon_url ) . '" alt="' . esc_attr( $status_alt ) . '" />';
+            } else {
+                // Fallback to dashicons
+                $dashicon_class = $status['is_complete'] ? 'dashicons-yes-alt' : 'dashicons-minus';
+                $dashicon_color = $status['is_complete'] ? '#10b981' : '#f59e0b';
+                echo '        <span class="dashicons ' . esc_attr( $dashicon_class ) . '" style="color: ' . esc_attr( $dashicon_color ) . '; font-size: 18px;"></span>';
+            }
             echo '      </span>';
             
+            // Lock icon if locked
             if ( $status['is_locked'] ) {
                 echo '      <span class="slge-status-icon" title="' . esc_attr( $status['lock_reason'] ) . '">';
-                echo '        <img src="' . esc_url( SLGE_PLUGIN_URL . 'assets/lock.png' ) . '" alt="' . esc_attr__( 'Locked', 'sensei-lesson-grid-editor' ) . '" />';
+                
+                if ( $this->file_exists_in_assets( 'lock.png' ) ) {
+                    echo '        <img src="' . esc_url( SLGE_PLUGIN_URL . 'assets/lock.png' ) . '" alt="' . esc_attr__( 'Locked', 'sensei-lesson-grid-editor' ) . '" />';
+                } else {
+                    // Fallback to dashicon
+                    echo '        <span class="dashicons dashicons-lock" style="color: #ef4444; font-size: 18px;"></span>';
+                }
                 echo '      </span>';
                 
                 if ( ! is_user_logged_in() ) {
@@ -627,6 +648,10 @@ class SLGE_Plugin {
         echo '</div>';
         
         return ob_get_clean();
+    }
+
+    private function file_exists_in_assets( $filename ) {
+        return file_exists( SLGE_PLUGIN_PATH . 'assets/' . $filename );
     }
 
     private function get_lesson_data( $lesson_id ) {
