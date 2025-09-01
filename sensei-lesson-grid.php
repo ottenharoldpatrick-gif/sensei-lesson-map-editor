@@ -596,7 +596,14 @@ class SLGE_Plugin {
 
         ob_start();
         
-        echo '<div class="slge-lesson-card' . ( $status['is_locked'] ? ' is-locked' : '' ) . '">';
+        // Check if we have a clickable URL and user is allowed to click
+        $is_clickable = ! empty( $url ) && ( ! $status['is_locked'] || is_user_logged_in() );
+        
+        if ( $is_clickable ) {
+            echo '<a href="' . esc_url( $url ) . '" class="slge-lesson-card-link">';
+        }
+        
+        echo '<div class="slge-lesson-card' . ( $status['is_locked'] ? ' is-locked' : '' ) . ( $is_clickable ? ' is-clickable' : '' ) . '">';
         echo '  <div class="slge-lesson-image-container">';
         echo '    <img class="slge-lesson-image" src="' . esc_url( $image_url ) . '" alt="' . esc_attr( $title ) . '" loading="lazy" />';
         
@@ -641,11 +648,19 @@ class SLGE_Plugin {
         
         echo '  </div>';
 
-        // Title with appropriate link or span
-        $title_element = $this->get_title_element( $title, $url, $status );
-        echo '  <div class="slge-lesson-title">' . $title_element . '</div>';
+        // Title (no longer needs its own link since whole card is clickable)
+        $title_content = ! empty( $title ) ? esc_html( $title ) : esc_html__( 'Untitled', 'sensei-lesson-grid-editor' );
+        if ( $status['is_locked'] && ! is_user_logged_in() ) {
+            echo '  <div class="slge-lesson-title slge-locked-title" title="' . esc_attr( $status['lock_reason'] ) . '">' . $title_content . '</div>';
+        } else {
+            echo '  <div class="slge-lesson-title">' . $title_content . '</div>';
+        }
         
         echo '</div>';
+        
+        if ( $is_clickable ) {
+            echo '</a>';
+        }
         
         return ob_get_clean();
     }
@@ -795,23 +810,6 @@ class SLGE_Plugin {
 
         $enabled = in_array( $setting, array( 'yes', '1', 1, true ), true );
         return $enabled;
-    }
-
-    private function get_title_element( $title, $url, $status ) {
-        if ( empty( $title ) ) {
-            $title = __( 'Untitled', 'sensei-lesson-grid-editor' );
-        }
-
-        if ( $status['is_locked'] && ! is_user_logged_in() ) {
-            return '<span class="slge-locked-title" title="' . esc_attr( $status['lock_reason'] ) . '">' . 
-                   esc_html( $title ) . '</span>';
-        }
-
-        if ( ! empty( $url ) ) {
-            return '<a href="' . esc_url( $url ) . '">' . esc_html( $title ) . '</a>';
-        }
-
-        return '<span>' . esc_html( $title ) . '</span>';
     }
 
     /* ===== Utility Functions ===== */

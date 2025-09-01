@@ -70,6 +70,20 @@
   }
 }
 
+/* Lesson card link wrapper */
+.slge-lesson-card-link {
+  text-decoration: none;
+  color: inherit;
+  display: block;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.slge-lesson-card-link:hover,
+.slge-lesson-card-link:focus {
+  text-decoration: none;
+  color: inherit;
+}
+
 /* Lesson card styling */
 .slge-lesson-card {
   border: 1px solid #e5e7eb;
@@ -77,31 +91,44 @@
   overflow: hidden;
   background: #fff;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  cursor: pointer;
   display: flex;
   flex-direction: column;
   height: 100%;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
-.slge-lesson-card:hover {
+.slge-lesson-card.is-clickable {
+  cursor: pointer;
+}
+
+.slge-lesson-card:not(.is-clickable) {
+  cursor: default;
+}
+
+.slge-lesson-card-link:hover .slge-lesson-card,
+.slge-lesson-card.is-clickable:hover {
   transform: translateY(-4px);
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
   border-color: #d1d5db;
 }
 
-.slge-lesson-card:active {
+.slge-lesson-card-link:active .slge-lesson-card,
+.slge-lesson-card.is-clickable:active {
   transform: translateY(-2px);
 }
 
 /* Locked state */
 .slge-lesson-card.is-locked {
   opacity: 0.7;
-  cursor: not-allowed;
   filter: grayscale(0.3);
 }
 
-.slge-lesson-card.is-locked:hover {
+.slge-lesson-card.is-locked.is-clickable {
+  cursor: not-allowed;
+}
+
+.slge-lesson-card.is-locked:hover,
+.slge-lesson-card-link:hover .slge-lesson-card.is-locked {
   transform: none;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
@@ -122,11 +149,13 @@
   transition: transform 0.3s ease;
 }
 
-.slge-lesson-card:hover .slge-lesson-image {
+.slge-lesson-card-link:hover .slge-lesson-image,
+.slge-lesson-card.is-clickable:hover .slge-lesson-image {
   transform: scale(1.05);
 }
 
-.slge-lesson-card.is-locked:hover .slge-lesson-image {
+.slge-lesson-card.is-locked:hover .slge-lesson-image,
+.slge-lesson-card-link:hover .slge-lesson-card.is-locked .slge-lesson-image {
   transform: none;
 }
 
@@ -225,21 +254,20 @@
   flex-grow: 1;
   display: flex;
   align-items: center;
-}
-
-.slge-lesson-title a {
-  color: inherit;
-  text-decoration: none;
   transition: color 0.2s ease;
 }
 
-.slge-lesson-title a:hover {
+.slge-lesson-card-link:hover .slge-lesson-title {
   color: #2563eb;
 }
 
 .slge-locked-title {
   cursor: not-allowed;
   color: #6b7280;
+}
+
+.slge-lesson-card-link:hover .slge-locked-title {
+  color: #6b7280; /* Keep locked titles gray even on hover */
 }
 
 /* Progress indicator enhancement */
@@ -295,29 +323,33 @@
 @media (prefers-reduced-motion: reduce) {
   .slge-lesson-card,
   .slge-lesson-image,
-  .slge-status-icon {
+  .slge-status-icon,
+  .slge-lesson-card-link {
     transition: none;
   }
   
-  .slge-lesson-card:hover {
+  .slge-lesson-card-link:hover .slge-lesson-card,
+  .slge-lesson-card.is-clickable:hover {
     transform: none;
   }
   
-  .slge-lesson-card:hover .slge-lesson-image {
+  .slge-lesson-card-link:hover .slge-lesson-image,
+  .slge-lesson-card.is-clickable:hover .slge-lesson-image {
     transform: none;
   }
 }
 
 /* Focus management for accessibility */
+.slge-lesson-card-link:focus-within,
 .slge-lesson-card:focus-within {
   outline: 2px solid #2563eb;
   outline-offset: 2px;
 }
 
-.slge-lesson-title a:focus {
+.slge-lesson-card-link:focus {
   outline: 2px solid #2563eb;
   outline-offset: 2px;
-  border-radius: 4px;
+  border-radius: 12px;
 }
 
 /* Print styles */
