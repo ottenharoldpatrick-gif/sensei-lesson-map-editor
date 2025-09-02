@@ -1,4 +1,5 @@
 Sensei Lesson Grid (Admin-Centric)
+
 Overzicht
 Sensei Lesson Grid is een WordPress-plugin waarmee je via een centrale grid‑editor lesmodules en tiles in vijf kolommen kunt opbouwen. De plugin biedt een shortcode [lesson_grid slug="..."] en integreert met Sensei voor voortgangscontrole en het blokkeren van lessen op basis van vereisten of inlogstatus
 
