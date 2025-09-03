@@ -1,0 +1,4 @@
+/vendor/
+# WordPress tests config is local
+wp-tests-config.php
+.phpunit.result.cache
