@@ -1,8 +1,8 @@
 <?php
 /**
  * Plugin Name: Sensei Lesson Grid (Admin-Centric)
- * Description: Centrale grid-editor met modules en tiles (5 kolommen). Shortcode: [lesson_grid slug="..."]. Sensei-koppeling voor voortgang en lock. (v1.0.0 stable)
- * Version: 1.0.0
+ * Description: Centrale grid-editor met modules en tiles. Per module instelbare kolommen (3-6). Shortcode: [lesson_grid slug="..."]. Sensei-koppeling voor voortgang en lock. (v1.1.0)
+ * Version: 1.1.0
  * Author: Harold Otten
  * Requires at least: 6.0
  * Tested up to: 6.8.2
@@ -13,7 +13,7 @@
 if ( ! defined( 'ABSPATH' ) ) { exit; }
 
 // Constants
-if ( ! defined( 'SLGE_VERSION' ) )     define( 'SLGE_VERSION', '1.0.1' );
+if ( ! defined( 'SLGE_VERSION' ) )     define( 'SLGE_VERSION', '1.1.0' );
 if ( ! defined( 'SLGE_PLUGIN_FILE' ) ) define( 'SLGE_PLUGIN_FILE', __FILE__ );
 if ( ! defined( 'SLGE_PLUGIN_PATH' ) ) define( 'SLGE_PLUGIN_PATH', plugin_dir_path( __FILE__ ) );
 if ( ! defined( 'SLGE_PLUGIN_URL' ) )  define( 'SLGE_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
@@ -76,9 +76,15 @@ class SLGE_Plugin {
             }
 
             $sanitized_module = array(
-                'name'  => isset( $module['name'] ) ? sanitize_text_field( $module['name'] ) : '',
-                'tiles' => array(),
+                'name'    => isset( $module['name'] ) ? sanitize_text_field( $module['name'] ) : '',
+                'columns' => isset( $module['columns'] ) ? absint( $module['columns'] ) : 5,
+                'tiles'   => array(),
             );
+
+            // Validate columns value
+            if ( ! in_array( $sanitized_module['columns'], array( 3, 4, 5, 6 ) ) ) {
+                $sanitized_module['columns'] = 5;
+            }
 
             if ( isset( $module['tiles'] ) && is_array( $module['tiles'] ) ) {
                 foreach ( $module['tiles'] as $tile ) {
@@ -172,19 +178,6 @@ class SLGE_Plugin {
 
     public function frontend_assets() {
         wp_enqueue_style( 'slge-frontend', SLGE_PLUGIN_URL . 'assets/frontend.css', array(), SLGE_VERSION );
-        
-        // Allow customization via filters
-        $desktop_cols = apply_filters( 'slge_desktop_columns', 5 );
-        $tablet_cols  = apply_filters( 'slge_tablet_columns', 3 );
-        $mobile_cols  = apply_filters( 'slge_mobile_columns', 2 );
-        
-        $vars = sprintf( 
-            ':root{--slge-desktop-cols:%d;--slge-tablet-cols:%d;--slge-mobile-cols:%d;}',
-            absint( $desktop_cols ),
-            absint( $tablet_cols ),
-            absint( $mobile_cols )
-        );
-        wp_add_inline_style( 'slge-frontend', $vars );
     }
 
     public function metabox_modules( $post ) {
@@ -198,8 +191,9 @@ class SLGE_Plugin {
         if ( empty( $structure ) ) {
             $structure = array(
                 array( 
-                    'name'  => __( 'Module 1', 'sensei-lesson-grid-editor' ), 
-                    'tiles' => array() 
+                    'name'    => __( 'Module 1', 'sensei-lesson-grid-editor' ), 
+                    'columns' => 5,
+                    'tiles'   => array() 
                 ),
             );
         }
@@ -261,12 +255,27 @@ class SLGE_Plugin {
     }
 
     private function print_module_block( $mIndex, $module ) {
-        $mName = isset( $module['name'] ) ? sanitize_text_field( $module['name'] ) : __( 'Module', 'sensei-lesson-grid-editor' );
+        $mName    = isset( $module['name'] ) ? sanitize_text_field( $module['name'] ) : __( 'Module', 'sensei-lesson-grid-editor' );
+        $mColumns = isset( $module['columns'] ) ? absint( $module['columns'] ) : 5;
+        
+        // Validate columns
+        if ( ! in_array( $mColumns, array( 3, 4, 5, 6 ) ) ) {
+            $mColumns = 5;
+        }
         
         echo '<div class="slg-module" data-index="' . intval( $mIndex ) . '">';
         echo '  <div class="slg-module-head">';
         echo '    <span class="dashicons dashicons-move slg-handle" title="' . esc_attr__( 'Drag to reorder', 'sensei-lesson-grid-editor' ) . '"></span>';
         echo '    <input type="text" class="slg-module-name" value="' . esc_attr( $mName ) . '" placeholder="' . esc_attr__( 'Module name', 'sensei-lesson-grid-editor' ) . '" />';
+        
+        // Column selector
+        echo '    <select class="slg-module-columns" title="' . esc_attr__( 'Number of columns', 'sensei-lesson-grid-editor' ) . '">';
+        echo '      <option value="3"' . selected( $mColumns, 3, false ) . '>3 ' . esc_html__( 'columns', 'sensei-lesson-grid-editor' ) . '</option>';
+        echo '      <option value="4"' . selected( $mColumns, 4, false ) . '>4 ' . esc_html__( 'columns', 'sensei-lesson-grid-editor' ) . '</option>';
+        echo '      <option value="5"' . selected( $mColumns, 5, false ) . '>5 ' . esc_html__( 'columns', 'sensei-lesson-grid-editor' ) . '</option>';
+        echo '      <option value="6"' . selected( $mColumns, 6, false ) . '>6 ' . esc_html__( 'columns', 'sensei-lesson-grid-editor' ) . '</option>';
+        echo '    </select>';
+        
         echo '    <button type="button" class="button-link-delete slg-remove-module" title="' . esc_attr__( 'Remove module', 'sensei-lesson-grid-editor' ) . '">&times;</button>';
         echo '    <button type="button" class="button slg-add-tile">' . esc_html__( 'Add tile', 'sensei-lesson-grid-editor' ) . '</button>';
         echo '  </div>';
@@ -292,7 +301,7 @@ class SLGE_Plugin {
 
         $is_bound = $tile['lesson_id'] > 0;
         
-        // Get lesson data if bound to prefill fields
+        // Get lesson data if bound to prefill fields  
         $lesson_title = $tile['title'];
         $lesson_url = $tile['url'];
         
@@ -530,7 +539,13 @@ class SLGE_Plugin {
         
         foreach ( $structure as $module ) {
             $module_name = isset( $module['name'] ) ? sanitize_text_field( $module['name'] ) : '';
+            $module_columns = isset( $module['columns'] ) ? absint( $module['columns'] ) : 5;
             $tiles = isset( $module['tiles'] ) && is_array( $module['tiles'] ) ? $module['tiles'] : array();
+            
+            // Validate columns
+            if ( ! in_array( $module_columns, array( 3, 4, 5, 6 ) ) ) {
+                $module_columns = 5;
+            }
             
             if ( empty( $tiles ) ) { 
                 continue; 
@@ -542,7 +557,8 @@ class SLGE_Plugin {
                 echo '<h3 class="slge-module-title">' . esc_html( $module_name ) . '</h3>';
             }
             
-            echo '<div class="slge-lesson-grid">';
+            // Add data-columns attribute for CSS targeting
+            echo '<div class="slge-lesson-grid" data-columns="' . esc_attr( $module_columns ) . '">';
             
             foreach ( $tiles as $tile ) {
                 echo $this->render_tile( $tile );
@@ -557,7 +573,7 @@ class SLGE_Plugin {
         // Hide Sensei default modules/lessons on single course if opted in
         $hide_default = get_post_meta( $grid_post->ID, '_slg_hide_sensei_default', true );
         if ( $hide_default && function_exists( 'is_singular' ) && is_singular( 'course' ) ) {
-            echo '<style>.course .modules-title, .course .module{display:none!important}</style>';
+            echo '<style>body.single-course .sensei-course-content, body.single-course .course-lessons, body.single-course .course-lesson-list{display:none!important}</style>';
         }
 
         // Debug information for admins
@@ -587,8 +603,8 @@ class SLGE_Plugin {
         $lesson_data = $this->get_lesson_data( $tile['lesson_id'] );
         
         // Use lesson data if available, otherwise use tile data
-        $title = $lesson_data['title'] ?? $tile['title'];
-        $url = $lesson_data['url'] ?? $tile['url'];
+        $title = isset( $lesson_data['title'] ) ? $lesson_data['title'] : $tile['title'];
+        $url = isset( $lesson_data['url'] ) ? $lesson_data['url'] : $tile['url'];
         $image_url = $this->get_tile_image_url( $tile, $lesson_data );
 
         // Status for current user (done/lock)
@@ -697,7 +713,7 @@ class SLGE_Plugin {
 
     private function get_tile_image_url( $tile, $lesson_data ) {
         // Priority: Lesson thumbnail > Custom image > Placeholder
-        if ( ! empty( $lesson_data['thumb'] ) ) {
+        if ( isset( $lesson_data['thumb'] ) && ! empty( $lesson_data['thumb'] ) ) {
             return $lesson_data['thumb'];
         }
 

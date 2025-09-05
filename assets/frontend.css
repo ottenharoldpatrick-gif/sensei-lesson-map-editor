@@ -21,18 +21,49 @@
   line-height: 1.3;
 }
 
-/* Responsive grid system */
+/* Responsive grid system - NOW WITH DYNAMIC COLUMNS */
 .slge-lesson-grid {
   display: grid;
-  grid-template-columns: repeat(var(--slge-desktop-cols, 5), minmax(0, 1fr));
   gap: 20px;
   margin-bottom: 1rem;
 }
 
-/* Tablet breakpoint */
+/* Column-specific styles */
+.slge-lesson-grid[data-columns="3"] {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.slge-lesson-grid[data-columns="4"] {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.slge-lesson-grid[data-columns="5"] {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.slge-lesson-grid[data-columns="6"] {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+
+/* Tablet breakpoint - responsive column reduction */
 @media (max-width: 1024px) {
+  .slge-lesson-grid[data-columns="6"] {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+  
+  .slge-lesson-grid[data-columns="5"] {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  
+  .slge-lesson-grid[data-columns="4"] {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  
+  .slge-lesson-grid[data-columns="3"] {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  
   .slge-lesson-grid {
-    grid-template-columns: repeat(var(--slge-tablet-cols, 3), minmax(0, 1fr));
     gap: 16px;
   }
   
@@ -43,8 +74,17 @@
 
 /* Mobile breakpoint */
 @media (max-width: 768px) {
+  .slge-lesson-grid[data-columns="6"],
+  .slge-lesson-grid[data-columns="5"],
+  .slge-lesson-grid[data-columns="4"] {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  
+  .slge-lesson-grid[data-columns="3"] {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  
   .slge-lesson-grid {
-    grid-template-columns: repeat(var(--slge-mobile-cols, 2), minmax(0, 1fr));
     gap: 12px;
   }
   
@@ -62,10 +102,16 @@
   }
 }
 
-/* Small mobile breakpoint */
+/* Small mobile breakpoint - all to single column */
 @media (max-width: 480px) {
-  .slge-lesson-grid {
+  .slge-lesson-grid[data-columns="6"],
+  .slge-lesson-grid[data-columns="5"],
+  .slge-lesson-grid[data-columns="4"],
+  .slge-lesson-grid[data-columns="3"] {
     grid-template-columns: 1fr;
+  }
+  
+  .slge-lesson-grid {
     gap: 10px;
   }
 }

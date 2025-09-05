@@ -13,13 +13,14 @@
       this.applyBoundStates();
     },
 
-    // Read current structure from DOM
+    // Read current structure from DOM (Updated to include columns)
     readStructure: function($wrap) {
       const modules = [];
       
       $wrap.find('.slg-module').each(function() {
         const $module = $(this);
         const name = $.trim($module.find('.slg-module-name').val() || '');
+        const columns = parseInt($module.find('.slg-module-columns').val() || '5', 10);
         const tiles = [];
         
         $module.find('.slg-tiles > .slg-tile').each(function() {
@@ -32,7 +33,11 @@
           });
         });
         
-        modules.push({ name: name, tiles: tiles });
+        modules.push({ 
+          name: name, 
+          columns: columns,
+          tiles: tiles 
+        });
       });
       
       return modules;
@@ -119,8 +124,8 @@
         this.unlinkLesson($(e.target));
       });
 
-      // Auto-save on input changes (debounced)
-      $root.on('input change', '.slg-module-name, .slg-title, .slg-url, .slg-lesson-id', 
+      // Auto-save on input changes (debounced) - Updated to include columns
+      $root.on('input change', '.slg-module-name, .slg-module-columns, .slg-title, .slg-url, .slg-lesson-id', 
         this.debounce(() => {
           this.writeStructure($root, this.readStructure($root));
         }, 500)
@@ -132,7 +137,7 @@
       });
     },
 
-    // Add new module
+    // Add new module (Updated with columns)
     addModule: function($root) {
       const moduleCount = $root.find('.slg-module').length + 1;
       const html = this.getModuleTemplate(moduleCount);
@@ -156,13 +161,19 @@
       $module.find('.slg-tile').last().find('.slg-title').focus();
     },
 
-    // Templates
+    // Templates (Updated with column selector)
     getModuleTemplate: function(index) {
       return [
         '<div class="slg-module">',
           '<div class="slg-module-head">',
             '<span class="dashicons dashicons-move slg-handle" title="Drag to reorder"></span>',
             '<input type="text" class="slg-module-name" placeholder="Module name" value="Module ' + index + '" />',
+            '<select class="slg-module-columns" title="Number of columns">',
+              '<option value="3">3 columns</option>',
+              '<option value="4">4 columns</option>',
+              '<option value="5" selected>5 columns</option>',
+              '<option value="6">6 columns</option>',
+            '</select>',
             '<button type="button" class="button-link-delete slg-remove-module" title="Remove module">&times;</button>',
             '<button type="button" class="button slg-add-tile">Add tile</button>',
           '</div>',

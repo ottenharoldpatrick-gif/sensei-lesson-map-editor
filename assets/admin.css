@@ -72,6 +72,27 @@
   outline: none;
 }
 
+/* NEW: Column selector styling */
+.slg-module-columns {
+  padding: 6px 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background: #fff;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.slg-module-columns:hover {
+  border-color: #2271b1;
+}
+
+.slg-module-columns:focus {
+  border-color: #2271b1;
+  box-shadow: 0 0 0 1px #2271b1;
+  outline: none;
+}
+
 /* Tiles container */
 .slg-tiles {
   list-style: none;
@@ -541,6 +562,11 @@
     order: 1;
     width: 100%;
     margin-bottom: 8px;
+  }
+  
+  .slg-module-columns {
+    order: 2;
+    width: auto;
   }
   
   .slg-row {
