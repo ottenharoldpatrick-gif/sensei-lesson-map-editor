@@ -573,7 +573,7 @@ class SLGE_Plugin {
         // Hide Sensei default modules/lessons on single course if opted in
         $hide_default = get_post_meta( $grid_post->ID, '_slg_hide_sensei_default', true );
         if ( $hide_default && function_exists( 'is_singular' ) && is_singular( 'course' ) ) {
-            echo '<style>body.single-course .sensei-course-content, body.single-course .course-lessons, body.single-course .course-lesson-list{display:none!important}</style>';
+            echo '<style>.course .modules-title, .course .module{display:none!important}</style>';
         }
 
         // Debug information for admins
